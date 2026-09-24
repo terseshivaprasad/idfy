@@ -7,14 +7,14 @@ namespace Idfy.Api.Data;
 public sealed class LogRepository(string connectionString)
 {
     private const string InsertApiCallLog = """
-        INSERT INTO ApiCallLogs
+        INSERT INTO IdfyApiCallLogs
             (CreatedAt, TraceId, TaskId, GroupId, Method, Url, RequestBody, StatusCode, ResponseBody, DurationMs, Exception)
         VALUES
             (@CreatedAt, @TraceId, @TaskId, @GroupId, @Method, @Url, @RequestBody, @StatusCode, @ResponseBody, @DurationMs, @Exception)
         """;
 
     private const string InsertErrorLog = """
-        INSERT INTO ErrorLogs
+        INSERT INTO IdfyErrorLogs
             (CreatedAt, TraceId, Method, Path, ExceptionType, Message, Details)
         VALUES
             (@CreatedAt, @TraceId, @Method, @Path, @ExceptionType, @Message, @Details)
@@ -65,7 +65,7 @@ public sealed class LogRepository(string connectionString)
         await connection.OpenAsync(ct);
 
         var total = 0;
-        foreach (var table in new[] { "ApiCallLogs", "ErrorLogs", "IdfyTasks" })
+        foreach (var table in new[] { "IdfyApiCallLogs", "IdfyErrorLogs", "IdfyTasks" })
         {
             int deleted;
             do

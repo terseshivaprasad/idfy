@@ -1,9 +1,9 @@
 -- Log tables for Idfy.Api. Idempotent: safe to run on every deploy.
 
-IF OBJECT_ID(N'dbo.ApiCallLogs', N'U') IS NULL
+IF OBJECT_ID(N'dbo.IdfyApiCallLogs', N'U') IS NULL
 BEGIN
-    CREATE TABLE dbo.ApiCallLogs (
-        Id            bigint IDENTITY  NOT NULL CONSTRAINT PK_ApiCallLogs PRIMARY KEY,
+    CREATE TABLE dbo.IdfyApiCallLogs (
+        Id            bigint IDENTITY  NOT NULL CONSTRAINT PK_IdfyApiCallLogs PRIMARY KEY,
         CreatedAt     datetimeoffset   NOT NULL,
         TraceId       nvarchar(64)     NULL,
         TaskId        nvarchar(64)     NULL,
@@ -16,12 +16,12 @@ BEGIN
         DurationMs    bigint           NOT NULL,
         Exception     nvarchar(max)    NULL
     );
-    CREATE INDEX IX_ApiCallLogs_CreatedAt ON dbo.ApiCallLogs (CreatedAt);
-    CREATE INDEX IX_ApiCallLogs_TaskId    ON dbo.ApiCallLogs (TaskId);
-    CREATE INDEX IX_ApiCallLogs_TraceId   ON dbo.ApiCallLogs (TraceId);
+    CREATE INDEX IX_IdfyApiCallLogs_CreatedAt ON dbo.IdfyApiCallLogs (CreatedAt);
+    CREATE INDEX IX_IdfyApiCallLogs_TaskId    ON dbo.IdfyApiCallLogs (TaskId);
+    CREATE INDEX IX_IdfyApiCallLogs_TraceId   ON dbo.IdfyApiCallLogs (TraceId);
 END;
 
--- Structured, PII-free record per IDfy task (queryable domain view of ApiCallLogs).
+-- Structured, PII-free record per IDfy task (queryable domain view of the raw call log).
 IF OBJECT_ID(N'dbo.IdfyTasks', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.IdfyTasks (
@@ -46,10 +46,10 @@ BEGIN
     CREATE INDEX IX_IdfyTasks_Status    ON dbo.IdfyTasks (Status);
 END;
 
-IF OBJECT_ID(N'dbo.ErrorLogs', N'U') IS NULL
+IF OBJECT_ID(N'dbo.IdfyErrorLogs', N'U') IS NULL
 BEGIN
-    CREATE TABLE dbo.ErrorLogs (
-        Id            bigint IDENTITY  NOT NULL CONSTRAINT PK_ErrorLogs PRIMARY KEY,
+    CREATE TABLE dbo.IdfyErrorLogs (
+        Id            bigint IDENTITY  NOT NULL CONSTRAINT PK_IdfyErrorLogs PRIMARY KEY,
         CreatedAt     datetimeoffset   NOT NULL,
         TraceId       nvarchar(64)     NULL,
         Method        nvarchar(16)     NULL,
@@ -58,6 +58,6 @@ BEGIN
         Message       nvarchar(max)    NOT NULL,
         Details       nvarchar(max)    NOT NULL
     );
-    CREATE INDEX IX_ErrorLogs_CreatedAt ON dbo.ErrorLogs (CreatedAt);
-    CREATE INDEX IX_ErrorLogs_TraceId   ON dbo.ErrorLogs (TraceId);
+    CREATE INDEX IX_IdfyErrorLogs_CreatedAt ON dbo.IdfyErrorLogs (CreatedAt);
+    CREATE INDEX IX_IdfyErrorLogs_TraceId   ON dbo.IdfyErrorLogs (TraceId);
 END;
