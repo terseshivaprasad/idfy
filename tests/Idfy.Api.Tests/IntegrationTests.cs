@@ -66,6 +66,13 @@ public sealed class FakeIdfyClient : IIdfyClient
 
     public IdfyVoterIdVerifyData? LastVoterData { get; private set; }
 
+    public Task<IdfyTaskResponse<VoterIdSourceResult>> VerifyVoterIdAsync(
+        IdfyTaskRequest<IdfyVoterIdVerifyData> r, CancellationToken ct = default)
+    {
+        LastVoterData = r.Data;
+        return Task.FromResult(Result(new IdfyTaskResponse<VoterIdSourceResult> { Status = "completed", Type = "ind_voter_id" }));
+    }
+
     public Task<IdfyAsyncSubmitResponse> SubmitVoterIdVerificationAsync(
         IdfyTaskRequest<IdfyVoterIdVerifyData> r, CancellationToken ct = default)
     {
@@ -280,6 +287,14 @@ public sealed class IntegrationTests : IClassFixture<IntegrationTests.Factory>
     public async Task Voter_id_submit_returns_request_id()
     {
         var resp = await Client().PostAsJsonAsync("/api/voter-id/verify", new { idNumber = "ABC1234567" });
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        Assert.Equal("ABC1234567", _factory.Idfy.LastVoterData!.IdNumber);
+    }
+
+    [Fact]
+    public async Task Voter_id_sync_returns_result_directly()
+    {
+        var resp = await Client().PostAsJsonAsync("/api/voter-id/verify/sync", new { idNumber = "ABC1234567" });
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
         Assert.Equal("ABC1234567", _factory.Idfy.LastVoterData!.IdNumber);
     }

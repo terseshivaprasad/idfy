@@ -13,6 +13,9 @@ public static class VoterIdEndpoints
         {
             var group = app.MapGroup("/api/voter-id").WithTags("Voter ID");
 
+            group.MapPost("/verify/sync", SyncVerify)
+                .WithSummary("Verify a voter id against the source synchronously (result returned directly).");
+
             group.MapPost("/verify", SubmitVerify)
                 .WithSummary("Submit async voter-id verification against the source; returns a requestId.");
 
@@ -23,12 +26,18 @@ public static class VoterIdEndpoints
         }
     }
 
+    private static Task<Results<Ok<IdfyTaskResponse<VoterIdSourceResult>>, ProblemHttpResult>> SyncVerify(
+        VerifyVoterIdRequest request, IIdfyClient idfy, CancellationToken ct) =>
+        CallAsync(() => idfy.VerifyVoterIdAsync(BuildRequest(request), ct), ct);
+
     private static Task<Results<Ok<IdfyAsyncSubmitResponse>, ProblemHttpResult>> SubmitVerify(
-        VerifyVoterIdRequest request, IIdfyClient idfy, CancellationToken ct)
+        VerifyVoterIdRequest request, IIdfyClient idfy, CancellationToken ct) =>
+        CallAsync(() => idfy.SubmitVoterIdVerificationAsync(BuildRequest(request), ct), ct);
+
+    private static IdfyTaskRequest<IdfyVoterIdVerifyData> BuildRequest(VerifyVoterIdRequest request)
     {
         var (task, group) = NewIds(request.TaskId, request.GroupId);
-        var upstream = new IdfyTaskRequest<IdfyVoterIdVerifyData>(task, group, new IdfyVoterIdVerifyData(request.IdNumber));
-        return CallAsync(() => idfy.SubmitVoterIdVerificationAsync(upstream, ct), ct);
+        return new IdfyTaskRequest<IdfyVoterIdVerifyData>(task, group, new IdfyVoterIdVerifyData(request.IdNumber));
     }
 
     private static Task<IResult> PollVerify(string requestId, IIdfyClient idfy, CancellationToken ct) =>

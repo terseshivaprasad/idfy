@@ -174,4 +174,13 @@ Content-Type: application/json
 GET {{Idfy.Api_HostAddress}}/api/voter-id/verify/a957d82c-987c-4fa9-b69f-6765dc3c1035
 x-api-key: {{apiKey}}
 
+### Voter-id verification (sync) - result returned directly
+POST {{Idfy.Api_HostAddress}}/api/voter-id/verify/sync
+x-api-key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "idNumber": "ABC1234567"
+}
+
 ###

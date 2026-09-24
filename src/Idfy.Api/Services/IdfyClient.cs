@@ -33,6 +33,10 @@ public interface IIdfyClient
     Task<IdfyTaskResponse<DrivingLicenseSourceResult>?> GetDrivingLicenseVerificationAsync(
         string requestId, CancellationToken ct = default);
 
+    /// <summary>Verifies a voter id against the source synchronously (result returned directly).</summary>
+    Task<IdfyTaskResponse<VoterIdSourceResult>> VerifyVoterIdAsync(
+        IdfyTaskRequest<IdfyVoterIdVerifyData> request, CancellationToken ct = default);
+
     /// <summary>Submits async voter-id verification; returns the request_id to poll with.</summary>
     Task<IdfyAsyncSubmitResponse> SubmitVoterIdVerificationAsync(
         IdfyTaskRequest<IdfyVoterIdVerifyData> request, CancellationToken ct = default);
@@ -117,6 +121,11 @@ public sealed class IdfyClient(HttpClient http, ILogger<IdfyClient> logger) : II
     public Task<IdfyTaskResponse<DrivingLicenseSourceResult>?> GetDrivingLicenseVerificationAsync(
         string requestId, CancellationToken ct = default) =>
         GetTaskAsync<DrivingLicenseSourceResult>(requestId, ct);
+
+    public Task<IdfyTaskResponse<VoterIdSourceResult>> VerifyVoterIdAsync(
+        IdfyTaskRequest<IdfyVoterIdVerifyData> request, CancellationToken ct = default) =>
+        PostAsync<IdfyVoterIdVerifyData, VoterIdSourceResult>(
+            "v3/tasks/sync/verify_with_source/ind_voter_id", request, ct);
 
     public Task<IdfyAsyncSubmitResponse> SubmitVoterIdVerificationAsync(
         IdfyTaskRequest<IdfyVoterIdVerifyData> request, CancellationToken ct = default) =>
