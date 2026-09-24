@@ -24,6 +24,11 @@ public sealed record IdfyAadhaarData(
     [property: JsonPropertyName("document1")] string Document1,
     [property: JsonPropertyName("consent")] string Consent);
 
+/// <summary>data for POST /v3/tasks/sync/extract/ind_passport. document2 (back page) is optional.</summary>
+public sealed record IdfyPassportData(
+    [property: JsonPropertyName("document1")] string Document1,
+    [property: JsonPropertyName("document2"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Document2);
+
 public sealed record IdfyTaskResponse<TResult>
 {
     [JsonPropertyName("action")] public string? Action { get; init; }
@@ -80,6 +85,35 @@ public sealed record AadhaarExtractionResult
 {
     [JsonPropertyName("extraction_output")] public AadhaarOutput? ExtractionOutput { get; init; }
     [JsonPropertyName("qr_output")] public AadhaarOutput? QrOutput { get; init; }
+}
+
+public sealed record PassportResult
+{
+    [JsonPropertyName("extraction_output")] public PassportOutput? ExtractionOutput { get; init; }
+}
+
+public sealed record PassportOutput
+{
+    [JsonPropertyName("address")] public string? Address { get; init; }
+    [JsonPropertyName("date_of_birth")] public string? DateOfBirth { get; init; }
+    [JsonPropertyName("date_of_expiry")] public string? DateOfExpiry { get; init; }
+    [JsonPropertyName("date_of_issue")] public string? DateOfIssue { get; init; }
+    [JsonPropertyName("district")] public string? District { get; init; }
+    [JsonPropertyName("fathers_name")] public string? FathersName { get; init; }
+    [JsonPropertyName("file_number")] public string? FileNumber { get; init; }
+    [JsonPropertyName("first_name")] public string? FirstName { get; init; }
+    [JsonPropertyName("gender")] public string? Gender { get; init; }
+    [JsonPropertyName("id_number")] public string? IdNumber { get; init; }
+    [JsonPropertyName("is_scanned")] public bool? IsScanned { get; init; }
+    [JsonPropertyName("last_name")] public string? LastName { get; init; }
+    [JsonPropertyName("mothers_name")] public string? MothersName { get; init; }
+    [JsonPropertyName("name_of_spouse")] public string? NameOfSpouse { get; init; }
+    [JsonPropertyName("name_on_card")] public string? NameOnCard { get; init; }
+    [JsonPropertyName("nationality")] public string? Nationality { get; init; }
+    [JsonPropertyName("pincode")] public string? Pincode { get; init; }
+    [JsonPropertyName("place_of_birth")] public string? PlaceOfBirth { get; init; }
+    [JsonPropertyName("place_of_issue")] public string? PlaceOfIssue { get; init; }
+    [JsonPropertyName("state")] public string? State { get; init; }
 }
 
 public sealed record DrivingLicenseResult

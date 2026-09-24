@@ -28,6 +28,15 @@ public static class LogRedaction
         ["pincode"] = _ => Redacted,
         ["gender"] = _ => Redacted,
         ["year_of_birth"] = _ => Redacted,
+        // Passport output.
+        ["file_number"] = MaskId,
+        ["first_name"] = _ => Redacted,
+        ["last_name"] = _ => Redacted,
+        ["mothers_name"] = _ => Redacted,
+        ["name_of_spouse"] = _ => Redacted,
+        ["place_of_birth"] = _ => Redacted,
+        ["place_of_issue"] = _ => Redacted,
+        ["nationality"] = _ => Redacted,
     };
 
     /// <summary>

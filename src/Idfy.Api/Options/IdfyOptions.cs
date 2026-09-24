@@ -33,6 +33,8 @@ public sealed class IdfyOptions
     public ImageLimits AadhaarImageLimits { get; set; } = new() { MinDimension = 150, MaxDimension = 10_000 };
 
     public ImageLimits DrivingLicenseImageLimits { get; set; } = new() { MinDimension = 150, MaxDimension = 10_000 };
+
+    public ImageLimits PassportImageLimits { get; set; } = new() { MinDimension = 150, MaxDimension = 10_000 };
 }
 
 public sealed class ImageLimits

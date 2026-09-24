@@ -17,6 +17,9 @@ public interface IIdfyClient
 
     Task<IdfyTaskResponse<DrivingLicenseResult>> ExtractDrivingLicenseAsync(
         IdfyTaskRequest<IdfyDocumentData> request, CancellationToken ct = default);
+
+    Task<IdfyTaskResponse<PassportResult>> ExtractPassportAsync(
+        IdfyTaskRequest<IdfyPassportData> request, CancellationToken ct = default);
 }
 
 /// <summary>A non-success response from IDfy, with the error fields parsed when the body is JSON.</summary>
@@ -77,6 +80,10 @@ public sealed class IdfyClient(HttpClient http, ILogger<IdfyClient> logger) : II
         IdfyTaskRequest<IdfyDocumentData> request, CancellationToken ct = default) =>
         // This task returns the task object wrapped in a single-element array.
         PostAsync<IdfyDocumentData, DrivingLicenseResult>("v3/tasks/sync/extract/ind_driving_license", request, ct);
+
+    public Task<IdfyTaskResponse<PassportResult>> ExtractPassportAsync(
+        IdfyTaskRequest<IdfyPassportData> request, CancellationToken ct = default) =>
+        PostAsync<IdfyPassportData, PassportResult>("v3/tasks/sync/extract/ind_passport", request, ct);
 
     private async Task<IdfyTaskResponse<TResult>> PostAsync<TData, TResult>(
         string path, IdfyTaskRequest<TData> request, CancellationToken ct)

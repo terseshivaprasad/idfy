@@ -95,4 +95,29 @@ Content-Type: image/jpeg
 < ./dl.jpg
 --boundary--
 
+### Passport extraction (OCR) by URL / Base64 - document2 (back page) optional
+POST {{Idfy.Api_HostAddress}}/api/passport/extract
+Content-Type: application/json
+
+{
+  "document": "https://example.com/passport-front.jpg",
+  "document2": "https://example.com/passport-back.jpg"
+}
+
+### Passport extraction (OCR) by file upload - file2 (back page) optional
+POST {{Idfy.Api_HostAddress}}/api/passport/extract/upload
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="front.jpg"
+Content-Type: image/jpeg
+
+< ./front.jpg
+--boundary
+Content-Disposition: form-data; name="file2"; filename="back.jpg"
+Content-Type: image/jpeg
+
+< ./back.jpg
+--boundary--
+
 ###
