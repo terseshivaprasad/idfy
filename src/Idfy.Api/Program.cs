@@ -121,3 +121,5 @@ app.MapDrivingLicenseEndpoints();
 app.MapPassportEndpoints();
 
 app.Run();
+
+public partial class Program;
