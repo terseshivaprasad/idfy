@@ -24,6 +24,9 @@ public static class DrivingLicenseEndpoints
                 .WithMetadata(new RequestSizeLimitAttribute(MaxUploadBytes))
                 .DisableAntiforgery();
 
+            group.MapPost("/verify/sync", SyncVerify)
+                .WithSummary("Verify a driving licence against the government source synchronously (result returned directly).");
+
             group.MapPost("/verify", SubmitVerify)
                 .WithSummary("Submit async driving-license verification against the government source; returns a requestId.");
 
@@ -34,8 +37,15 @@ public static class DrivingLicenseEndpoints
         }
     }
 
+    private static Task<Results<Ok<IdfyTaskResponse<DrivingLicenseSourceResult>>, ProblemHttpResult>> SyncVerify(
+        VerifyDrivingLicenseRequest request, IIdfyClient idfy, CancellationToken ct) =>
+        CallAsync(() => idfy.VerifyDrivingLicenseAsync(BuildVerifyRequest(request), ct), ct);
+
     private static Task<Results<Ok<IdfyAsyncSubmitResponse>, ProblemHttpResult>> SubmitVerify(
-        VerifyDrivingLicenseRequest request, IIdfyClient idfy, CancellationToken ct)
+        VerifyDrivingLicenseRequest request, IIdfyClient idfy, CancellationToken ct) =>
+        CallAsync(() => idfy.SubmitDrivingLicenseVerificationAsync(BuildVerifyRequest(request), ct), ct);
+
+    private static IdfyTaskRequest<IdfyDrivingLicenseVerifyData> BuildVerifyRequest(VerifyDrivingLicenseRequest request)
     {
         var (task, group) = NewIds(request.TaskId, request.GroupId);
         var advanced = request.StateInfo || request.AgeInfo
@@ -44,13 +54,11 @@ public static class DrivingLicenseEndpoints
                 request.AgeInfo ? true : null)
             : null;
 
-        var upstream = new IdfyTaskRequest<IdfyDrivingLicenseVerifyData>(task, group,
+        return new IdfyTaskRequest<IdfyDrivingLicenseVerifyData>(task, group,
             new IdfyDrivingLicenseVerifyData(
                 request.IdNumber,
                 request.DateOfBirth!.Value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
                 advanced));
-
-        return CallAsync(() => idfy.SubmitDrivingLicenseVerificationAsync(upstream, ct), ct);
     }
 
     private static Task<IResult> PollVerify(string requestId, IIdfyClient idfy, CancellationToken ct) =>

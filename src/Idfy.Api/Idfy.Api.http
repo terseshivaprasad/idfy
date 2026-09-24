@@ -149,4 +149,16 @@ Content-Type: application/json
 GET {{Idfy.Api_HostAddress}}/api/driving-license/verify/a957d82c-987c-4fa9-b69f-6765dc3c1035
 x-api-key: {{apiKey}}
 
+### Driving-license verification (sync) - result returned directly
+POST {{Idfy.Api_HostAddress}}/api/driving-license/verify/sync
+x-api-key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "idNumber": "BR0120150052869",
+  "dateOfBirth": "1985-02-15",
+  "stateInfo": true,
+  "ageInfo": true
+}
+
 ###

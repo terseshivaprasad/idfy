@@ -21,6 +21,10 @@ public interface IIdfyClient
     Task<IdfyTaskResponse<PassportResult>> ExtractPassportAsync(
         IdfyTaskRequest<IdfyPassportData> request, CancellationToken ct = default);
 
+    /// <summary>Verifies a driving licence against the source synchronously (result returned directly).</summary>
+    Task<IdfyTaskResponse<DrivingLicenseSourceResult>> VerifyDrivingLicenseAsync(
+        IdfyTaskRequest<IdfyDrivingLicenseVerifyData> request, CancellationToken ct = default);
+
     /// <summary>Submits the async driving-license verification; returns the request_id to poll with.</summary>
     Task<IdfyAsyncSubmitResponse> SubmitDrivingLicenseVerificationAsync(
         IdfyTaskRequest<IdfyDrivingLicenseVerifyData> request, CancellationToken ct = default);
@@ -92,6 +96,11 @@ public sealed class IdfyClient(HttpClient http, ILogger<IdfyClient> logger) : II
     public Task<IdfyTaskResponse<PassportResult>> ExtractPassportAsync(
         IdfyTaskRequest<IdfyPassportData> request, CancellationToken ct = default) =>
         PostAsync<IdfyPassportData, PassportResult>("v3/tasks/sync/extract/ind_passport", request, ct);
+
+    public Task<IdfyTaskResponse<DrivingLicenseSourceResult>> VerifyDrivingLicenseAsync(
+        IdfyTaskRequest<IdfyDrivingLicenseVerifyData> request, CancellationToken ct = default) =>
+        PostAsync<IdfyDrivingLicenseVerifyData, DrivingLicenseSourceResult>(
+            "v3/tasks/sync/verify_with_source/ind_driving_license", request, ct);
 
     public async Task<IdfyAsyncSubmitResponse> SubmitDrivingLicenseVerificationAsync(
         IdfyTaskRequest<IdfyDrivingLicenseVerifyData> request, CancellationToken ct = default)

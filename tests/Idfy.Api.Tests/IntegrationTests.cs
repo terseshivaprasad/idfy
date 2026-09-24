@@ -44,6 +44,13 @@ public sealed class FakeIdfyClient : IIdfyClient
     public IdfyDrivingLicenseVerifyData? LastVerifyData { get; private set; }
     public bool VerifyResultReady { get; set; } = true;
 
+    public Task<IdfyTaskResponse<DrivingLicenseSourceResult>> VerifyDrivingLicenseAsync(
+        IdfyTaskRequest<IdfyDrivingLicenseVerifyData> r, CancellationToken ct = default)
+    {
+        LastVerifyData = r.Data;
+        return Task.FromResult(Result(new IdfyTaskResponse<DrivingLicenseSourceResult> { Status = "completed", Type = "ind_driving_license" }));
+    }
+
     public Task<IdfyAsyncSubmitResponse> SubmitDrivingLicenseVerificationAsync(
         IdfyTaskRequest<IdfyDrivingLicenseVerifyData> r, CancellationToken ct = default)
     {
@@ -224,6 +231,15 @@ public sealed class IntegrationTests : IClassFixture<IntegrationTests.Factory>
     {
         var resp = await Client().PostAsync("/api/driving-license/verify", Json(body));
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task Dl_verify_sync_returns_result_directly()
+    {
+        var resp = await Client().PostAsJsonAsync("/api/driving-license/verify/sync",
+            new { idNumber = "BR0120150052869", dateOfBirth = "1985-02-15" });
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        Assert.Equal("1985-02-15", _factory.Idfy.LastVerifyData!.DateOfBirth);
     }
 
     [Fact]
