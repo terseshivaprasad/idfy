@@ -35,10 +35,6 @@ builder.Services.AddTransient<IdfyLoggingHandler>();
 builder.Services.AddSingleton<RequestLoggingMiddleware>();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
-builder.Services.AddOptions<LogRetentionOptions>()
-    .Bind(builder.Configuration.GetSection(LogRetentionOptions.SectionName));
-builder.Services.AddHostedService<LogRetentionService>();
-
 builder.Services.AddHealthChecks()
     .AddCheck<LogDbHealthCheck>("logdb");
 

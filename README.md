@@ -131,8 +131,8 @@ Document images, extracted personal details and signed document URLs are
 redacted/masked before logging (inbound `document`/`document2` images and
 camelCase PII fields too; multipart uploads are logged only as a size note).
 Writes happen off the request path in a batched background writer, so logging
-never blocks or fails a request. Rows older than `LogRetention:RetentionDays`
-(default 90) are swept automatically.
+never blocks or fails a request. Logs are retained indefinitely for audit;
+the application never deletes them.
 
 Schema: [`db/log-tables.sql`](db/log-tables.sql) (idempotent; run once per
 environment).
@@ -148,7 +148,7 @@ Configured via `appsettings.json`, environment variables or user-secrets:
 | `Idfy:AdvancedFeatureKeys` | Validate feature key names (from the IDfy SPOC). |
 | `ConnectionStrings:LogDb` | SQL Server connection string for the log tables. |
 | `Cors:AllowedOrigins` | Browser origins allowed to call the API (`"*"` for any). |
-| `RateLimit`, `LogRetention` | Rate-limit and retention settings. |
+| `RateLimit` | Rate-limit settings. |
 
 ### Secrets
 

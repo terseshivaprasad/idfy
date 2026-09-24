@@ -71,28 +71,4 @@ public sealed class LogRepository(string connectionString)
         await connection.OpenAsync(ct);
         await connection.ExecuteScalarAsync<int>(new CommandDefinition("SELECT 1", cancellationToken: ct));
     }
-
-    /// <summary>Deletes log rows older than the cutoff, in capped batches to avoid long locks.</summary>
-    /// <returns>Total rows deleted across all log tables.</returns>
-    public async Task<int> DeleteOlderThanAsync(DateTimeOffset cutoff, int batchSize, CancellationToken ct)
-    {
-        await using var connection = new SqlConnection(connectionString);
-        await connection.OpenAsync(ct);
-
-        var total = 0;
-        foreach (var table in new[] { "IdfyApiCallLogs", "IdfyRequestLogs", "IdfyErrorLogs", "IdfyTasks" })
-        {
-            int deleted;
-            do
-            {
-                deleted = await connection.ExecuteAsync(new CommandDefinition(
-                    $"DELETE TOP (@batchSize) FROM {table} WHERE CreatedAt < @cutoff",
-                    new { batchSize, cutoff }, cancellationToken: ct));
-                total += deleted;
-            }
-            while (deleted == batchSize && !ct.IsCancellationRequested);
-        }
-
-        return total;
-    }
 }
