@@ -44,6 +44,9 @@ public static class LogRedaction
         ["city"] = _ => Redacted,
         ["card_serial_no"] = MaskId,
         ["face_image"] = _ => Redacted,
+        // Voter-id source_output.
+        ["rln_name"] = _ => Redacted,
+        ["house_no"] = _ => Redacted,
     };
 
     /// <summary>Parses a body once; returns null for empty or non-JSON content.</summary>

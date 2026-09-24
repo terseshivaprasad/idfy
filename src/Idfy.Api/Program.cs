@@ -164,6 +164,7 @@ app.MapPanEndpoints();
 app.MapAadhaarEndpoints();
 app.MapDrivingLicenseEndpoints();
 app.MapPassportEndpoints();
+app.MapVoterIdEndpoints();
 
 app.Run();
 

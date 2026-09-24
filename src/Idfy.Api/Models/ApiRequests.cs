@@ -102,6 +102,19 @@ public sealed class VerifyDrivingLicenseRequest
     public Guid? GroupId { get; set; }
 }
 
+/// <summary>Request for async voter-id verification against the source.</summary>
+public sealed class VerifyVoterIdRequest
+{
+    /// <summary>Voter ID (EPIC) number.</summary>
+    [Required]
+    [StringLength(20, MinimumLength = 5)]
+    public string IdNumber { get; set; } = string.Empty;
+
+    public Guid? TaskId { get; set; }
+
+    public Guid? GroupId { get; set; }
+}
+
 /// <summary>Request for Aadhaar extraction. Consent is mandatory (UIDAI/DPDP).</summary>
 public sealed class ExtractAadhaarRequest
 {

@@ -32,6 +32,14 @@ public interface IIdfyClient
     /// <summary>Polls an async task by request_id. Null means the result is not ready yet.</summary>
     Task<IdfyTaskResponse<DrivingLicenseSourceResult>?> GetDrivingLicenseVerificationAsync(
         string requestId, CancellationToken ct = default);
+
+    /// <summary>Submits async voter-id verification; returns the request_id to poll with.</summary>
+    Task<IdfyAsyncSubmitResponse> SubmitVoterIdVerificationAsync(
+        IdfyTaskRequest<IdfyVoterIdVerifyData> request, CancellationToken ct = default);
+
+    /// <summary>Polls an async voter-id task by request_id. Null means the result is not ready yet.</summary>
+    Task<IdfyTaskResponse<VoterIdSourceResult>?> GetVoterIdVerificationAsync(
+        string requestId, CancellationToken ct = default);
 }
 
 /// <summary>A non-success response from IDfy, with the error fields parsed when the body is JSON.</summary>
@@ -102,10 +110,26 @@ public sealed class IdfyClient(HttpClient http, ILogger<IdfyClient> logger) : II
         PostAsync<IdfyDrivingLicenseVerifyData, DrivingLicenseSourceResult>(
             "v3/tasks/sync/verify_with_source/ind_driving_license", request, ct);
 
-    public async Task<IdfyAsyncSubmitResponse> SubmitDrivingLicenseVerificationAsync(
-        IdfyTaskRequest<IdfyDrivingLicenseVerifyData> request, CancellationToken ct = default)
+    public Task<IdfyAsyncSubmitResponse> SubmitDrivingLicenseVerificationAsync(
+        IdfyTaskRequest<IdfyDrivingLicenseVerifyData> request, CancellationToken ct = default) =>
+        SubmitAsync("v3/tasks/async/verify_with_source/ind_driving_license", request, ct);
+
+    public Task<IdfyTaskResponse<DrivingLicenseSourceResult>?> GetDrivingLicenseVerificationAsync(
+        string requestId, CancellationToken ct = default) =>
+        GetTaskAsync<DrivingLicenseSourceResult>(requestId, ct);
+
+    public Task<IdfyAsyncSubmitResponse> SubmitVoterIdVerificationAsync(
+        IdfyTaskRequest<IdfyVoterIdVerifyData> request, CancellationToken ct = default) =>
+        SubmitAsync("v3/tasks/async/verify_with_source/ind_voter_id", request, ct);
+
+    public Task<IdfyTaskResponse<VoterIdSourceResult>?> GetVoterIdVerificationAsync(
+        string requestId, CancellationToken ct = default) =>
+        GetTaskAsync<VoterIdSourceResult>(requestId, ct);
+
+    private async Task<IdfyAsyncSubmitResponse> SubmitAsync<TData>(
+        string path, IdfyTaskRequest<TData> request, CancellationToken ct)
     {
-        var (body, status) = await PostRawAsync("v3/tasks/async/verify_with_source/ind_driving_license", request, ct);
+        var (body, status) = await PostRawAsync(path, request, ct);
         try
         {
             return JsonSerializer.Deserialize<IdfyAsyncSubmitResponse>(body) ?? throw new IdfyApiException(status, body);
@@ -116,8 +140,8 @@ public sealed class IdfyClient(HttpClient http, ILogger<IdfyClient> logger) : II
         }
     }
 
-    public async Task<IdfyTaskResponse<DrivingLicenseSourceResult>?> GetDrivingLicenseVerificationAsync(
-        string requestId, CancellationToken ct = default)
+    /// <summary>Polls GET /v3/tasks?request_id=. Null when the result is not ready (empty array).</summary>
+    private async Task<IdfyTaskResponse<TResult>?> GetTaskAsync<TResult>(string requestId, CancellationToken ct)
     {
         var path = $"v3/tasks?request_id={Uri.EscapeDataString(requestId)}";
         using var response = await http.GetAsync(path, ct);
@@ -126,7 +150,7 @@ public sealed class IdfyClient(HttpClient http, ILogger<IdfyClient> logger) : II
         if (!response.IsSuccessStatusCode)
             throw Fail(path, null, response.StatusCode, body);
 
-        return DeserializeOrNull<DrivingLicenseSourceResult>(body, response.StatusCode);
+        return DeserializeOrNull<TResult>(body, response.StatusCode);
     }
 
     private async Task<IdfyTaskResponse<TResult>> PostAsync<TData, TResult>(

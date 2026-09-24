@@ -120,6 +120,26 @@ public class LogRedactionTests
     }
 
     [Fact]
+    public void MaskResponse_masks_voter_id_source_output()
+    {
+        var body = """
+            {"type":"ind_voter_id","result":{"match_output":{"name_on_card":1},"source_output":{
+              "name_on_card":"shubh pipalia","rln_name":"chetan pipalia","house_no":"12",
+              "gender":"M","district":"Mumbai Suburban","id_number":"ABC1234567",
+              "ac_no":"160","ps_name":"Govind Nagar School","status":"id_found"}}}
+            """;
+
+        var masked = LogRedaction.MaskResponse(body);
+
+        Assert.Equal("[redacted]", Field(masked, "result", "source_output", "name_on_card"));
+        Assert.Equal("[redacted]", Field(masked, "result", "source_output", "rln_name"));
+        Assert.Equal("[redacted]", Field(masked, "result", "source_output", "house_no"));
+        // Electoral-roll admin fields and match score kept.
+        Assert.Equal("160", Field(masked, "result", "source_output", "ac_no"));
+        Assert.Equal("id_found", Field(masked, "result", "source_output", "status"));
+    }
+
+    [Fact]
     public void RedactRequest_keeps_url_documents()
     {
         var body = """{"task_id":"t1","group_id":"g1","data":{"document1":"https://example.com/x.jpg"}}""";

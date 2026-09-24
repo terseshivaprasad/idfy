@@ -161,4 +161,17 @@ Content-Type: application/json
   "ageInfo": true
 }
 
+### Voter-id verification (async) - submit, returns requestId
+POST {{Idfy.Api_HostAddress}}/api/voter-id/verify
+x-api-key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "idNumber": "ABC1234567"
+}
+
+### Voter-id verification (async) - poll by requestId (202 while processing)
+GET {{Idfy.Api_HostAddress}}/api/voter-id/verify/a957d82c-987c-4fa9-b69f-6765dc3c1035
+x-api-key: {{apiKey}}
+
 ###

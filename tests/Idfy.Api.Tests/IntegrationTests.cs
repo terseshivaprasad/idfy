@@ -63,6 +63,21 @@ public sealed class FakeIdfyClient : IIdfyClient
         Task.FromResult(Result(VerifyResultReady
             ? new IdfyTaskResponse<DrivingLicenseSourceResult> { Status = "completed", Type = "ind_driving_license" }
             : null));
+
+    public IdfyVoterIdVerifyData? LastVoterData { get; private set; }
+
+    public Task<IdfyAsyncSubmitResponse> SubmitVoterIdVerificationAsync(
+        IdfyTaskRequest<IdfyVoterIdVerifyData> r, CancellationToken ct = default)
+    {
+        LastVoterData = r.Data;
+        return Task.FromResult(Result(new IdfyAsyncSubmitResponse { RequestId = "req-voter" }));
+    }
+
+    public Task<IdfyTaskResponse<VoterIdSourceResult>?> GetVoterIdVerificationAsync(
+        string requestId, CancellationToken ct = default) =>
+        Task.FromResult(Result(VerifyResultReady
+            ? new IdfyTaskResponse<VoterIdSourceResult> { Status = "completed", Type = "ind_voter_id" }
+            : null));
 }
 
 public sealed class IntegrationTests : IClassFixture<IntegrationTests.Factory>
@@ -259,6 +274,33 @@ public sealed class IntegrationTests : IClassFixture<IntegrationTests.Factory>
     {
         var resp = await Client().GetAsync("/api/driving-license/verify/req-abc");
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task Voter_id_submit_returns_request_id()
+    {
+        var resp = await Client().PostAsJsonAsync("/api/voter-id/verify", new { idNumber = "ABC1234567" });
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        Assert.Equal("ABC1234567", _factory.Idfy.LastVoterData!.IdNumber);
+    }
+
+    [Fact]
+    public async Task Voter_id_requires_id_number()
+    {
+        var resp = await Client().PostAsync("/api/voter-id/verify", Json("""{"idNumber":"x"}"""));
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task Voter_id_poll_returns_202_until_ready()
+    {
+        _factory.Idfy.VerifyResultReady = false;
+        try
+        {
+            var resp = await Client().GetAsync("/api/voter-id/verify/req-voter");
+            Assert.Equal(HttpStatusCode.Accepted, resp.StatusCode);
+        }
+        finally { _factory.Idfy.VerifyResultReady = true; }
     }
 
     [Fact]

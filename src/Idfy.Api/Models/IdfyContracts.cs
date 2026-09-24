@@ -39,6 +39,10 @@ public sealed record IdfyDlVerifyAdvancedDetails(
     [property: JsonPropertyName("state_info"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] bool? StateInfo,
     [property: JsonPropertyName("age_info"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] bool? AgeInfo);
 
+/// <summary>data for verify_with_source/ind_voter_id.</summary>
+public sealed record IdfyVoterIdVerifyData(
+    [property: JsonPropertyName("id_number")] string IdNumber);
+
 /// <summary>Response to an async task submission: only a request_id to poll with.</summary>
 public sealed record IdfyAsyncSubmitResponse
 {
@@ -178,6 +182,38 @@ public sealed record CovDetail
     [JsonPropertyName("category")] public string? Category { get; init; }
     [JsonPropertyName("cov")] public string? Cov { get; init; }
     [JsonPropertyName("issue_date")] public string? IssueDate { get; init; }
+}
+
+public sealed record VoterIdSourceResult
+{
+    [JsonPropertyName("match_output")] public VoterIdMatchOutput? MatchOutput { get; init; }
+    [JsonPropertyName("source_output")] public VoterIdSourceOutput? SourceOutput { get; init; }
+}
+
+public sealed record VoterIdMatchOutput
+{
+    [JsonPropertyName("name_on_card")] public int? NameOnCard { get; init; }
+}
+
+public sealed record VoterIdSourceOutput
+{
+    [JsonPropertyName("ac_no")] public string? AcNo { get; init; }
+    [JsonPropertyName("date_of_birth")] public string? DateOfBirth { get; init; }
+    [JsonPropertyName("district")] public string? District { get; init; }
+    [JsonPropertyName("gender")] public string? Gender { get; init; }
+    [JsonPropertyName("house_no")] public string? HouseNo { get; init; }
+    [JsonPropertyName("id_number")] public string? IdNumber { get; init; }
+    [JsonPropertyName("last_update")] public string? LastUpdate { get; init; }
+    [JsonPropertyName("name_on_card")] public string? NameOnCard { get; init; }
+    [JsonPropertyName("part_no")] public string? PartNo { get; init; }
+    [JsonPropertyName("ps_lat_long")] public string? PsLatLong { get; init; }
+    [JsonPropertyName("ps_name")] public string? PsName { get; init; }
+    [JsonPropertyName("rln_name")] public string? RlnName { get; init; }
+    [JsonPropertyName("section_no")] public string? SectionNo { get; init; }
+    [JsonPropertyName("source")] public string? Source { get; init; }
+    [JsonPropertyName("st_code")] public string? StCode { get; init; }
+    [JsonPropertyName("state")] public string? State { get; init; }
+    [JsonPropertyName("status")] public string? Status { get; init; }
 }
 
 public sealed record DrivingLicenseOutput
