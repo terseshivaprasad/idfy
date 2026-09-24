@@ -32,6 +32,7 @@ builder.Services.AddSingleton(new LogRepository(logDbConnection));
 builder.Services.AddSingleton<DbLogQueue>();
 builder.Services.AddHostedService<DbLogWriter>();
 builder.Services.AddTransient<IdfyLoggingHandler>();
+builder.Services.AddSingleton<RequestLoggingMiddleware>();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 builder.Services.AddOptions<LogRetentionOptions>()
@@ -139,6 +140,10 @@ if (forwardedHeadersEnabled)
     app.UseForwardedHeaders();
 
 app.UseResponseCompression();
+
+// Log inbound /api/* request+response (uncompressed body, final status incl. handled exceptions).
+// Sits inside compression and outside the exception handler for exactly that reason.
+app.UseMiddleware<RequestLoggingMiddleware>();
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();

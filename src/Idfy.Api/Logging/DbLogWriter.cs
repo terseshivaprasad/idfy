@@ -15,6 +15,8 @@ public sealed class DbLogQueue(ILogger<DbLogQueue> logger)
 
     public void Enqueue(ApiCallLog entry) => Write(entry);
 
+    public void Enqueue(RequestLog entry) => Write(entry);
+
     public void Enqueue(ErrorLog entry) => Write(entry);
 
     public void Enqueue(IdfyTaskLog entry) => Write(entry);
@@ -50,6 +52,7 @@ public sealed class DbLogWriter(
             {
                 await repository.InsertAsync(
                     batch.OfType<ApiCallLog>().ToList(),
+                    batch.OfType<RequestLog>().ToList(),
                     batch.OfType<ErrorLog>().ToList(),
                     batch.OfType<IdfyTaskLog>().ToList(),
                     CancellationToken.None);

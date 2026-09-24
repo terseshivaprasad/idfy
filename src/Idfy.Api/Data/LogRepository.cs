@@ -11,11 +11,12 @@ public sealed class LogRepository(string connectionString)
     /// <summary>Bulk-inserts each batch: one round trip per table via SqlBulkCopy, all in one transaction.</summary>
     public async Task InsertAsync(
         IReadOnlyCollection<ApiCallLog> apiCalls,
+        IReadOnlyCollection<RequestLog> requests,
         IReadOnlyCollection<ErrorLog> errors,
         IReadOnlyCollection<IdfyTaskLog> tasks,
         CancellationToken ct)
     {
-        if (apiCalls.Count == 0 && errors.Count == 0 && tasks.Count == 0)
+        if (apiCalls.Count == 0 && requests.Count == 0 && errors.Count == 0 && tasks.Count == 0)
             return;
 
         await using var connection = new SqlConnection(connectionString);
@@ -23,6 +24,7 @@ public sealed class LogRepository(string connectionString)
         await using var tx = (SqlTransaction)await connection.BeginTransactionAsync(ct);
 
         await BulkInsertAsync(connection, tx, "IdfyApiCallLogs", apiCalls, ct);
+        await BulkInsertAsync(connection, tx, "IdfyRequestLogs", requests, ct);
         await BulkInsertAsync(connection, tx, "IdfyErrorLogs", errors, ct);
         await BulkInsertAsync(connection, tx, "IdfyTasks", tasks, ct);
 
@@ -71,14 +73,14 @@ public sealed class LogRepository(string connectionString)
     }
 
     /// <summary>Deletes log rows older than the cutoff, in capped batches to avoid long locks.</summary>
-    /// <returns>Total rows deleted across both tables.</returns>
+    /// <returns>Total rows deleted across all log tables.</returns>
     public async Task<int> DeleteOlderThanAsync(DateTimeOffset cutoff, int batchSize, CancellationToken ct)
     {
         await using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync(ct);
 
         var total = 0;
-        foreach (var table in new[] { "IdfyApiCallLogs", "IdfyErrorLogs", "IdfyTasks" })
+        foreach (var table in new[] { "IdfyApiCallLogs", "IdfyRequestLogs", "IdfyErrorLogs", "IdfyTasks" })
         {
             int deleted;
             do

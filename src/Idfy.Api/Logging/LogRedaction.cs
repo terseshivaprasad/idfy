@@ -55,6 +55,12 @@ public static class LogRedaction
         // pan_aadhaar_link request: both numbers are sensitive.
         ["pan_number"] = MaskId,
         ["aadhaar_number"] = MaskId,
+        // Inbound (camelCase) request fields from our own callers.
+        ["idNumber"] = MaskId,
+        ["panNumber"] = MaskId,
+        ["aadhaarNumber"] = MaskId,
+        ["passportFileNumber"] = MaskId,
+        ["dateOfBirth"] = _ => Redacted,
         // Aadhaar masking result: signed URLs point at the (masked and original) document images.
         ["document_url"] = _ => Redacted,
         ["original_document_url"] = _ => Redacted,
@@ -65,8 +71,11 @@ public static class LogRedaction
     {
         if (string.IsNullOrEmpty(body))
             return null;
+        // JsonException: malformed JSON. ArgumentException: duplicate property names (a caller may
+        // send those; the endpoint rejects them, but this logging path must not throw on them).
         try { return JsonNode.Parse(body); }
         catch (JsonException) { return null; }
+        catch (ArgumentException) { return null; }
     }
 
     /// <summary>String entry point (parses); see the JsonNode overload for the work.</summary>
@@ -97,6 +106,38 @@ public static class LogRedaction
         Mask(root);
 
         return (root["task_id"]?.ToString(), root["group_id"]?.ToString(), root.ToJsonString(WriteOptions));
+    }
+
+    /// <summary>
+    /// Redacts an inbound request body from one of our own callers: strips inline Base64 images
+    /// (<c>document</c>/<c>document2</c>) and masks camelCase PII (idNumber, dateOfBirth, …).
+    /// Multipart uploads are not parsed — only a size note is kept.
+    /// </summary>
+    public static string? RedactInboundRequest(string? body, string? contentType)
+    {
+        if (!string.IsNullOrEmpty(contentType) && contentType.Contains("multipart/form-data", StringComparison.OrdinalIgnoreCase))
+            return $"[multipart form-data upload, {body?.Length ?? 0} chars]";
+        if (string.IsNullOrEmpty(body))
+            return body;
+        if (TryParse(body) is not { } parsed)
+            return "[unparseable request body redacted]";
+        if (parsed is JsonObject root)
+        {
+            RedactInlineDocument(root, "document");
+            RedactInlineDocument(root, "document2");
+        }
+        Mask(parsed);
+        return parsed.ToJsonString(WriteOptions);
+    }
+
+    private static void RedactInlineDocument(JsonObject root, string key)
+    {
+        if (root[key] is JsonValue value && value.TryGetValue<string>(out var text)
+            && !text.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+            && !text.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            root[key] = $"[base64 redacted, {text.Length} chars]";
+        }
     }
 
     /// <summary>String entry point (parses); see the JsonNode overload for the work.</summary>

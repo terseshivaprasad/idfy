@@ -195,4 +195,44 @@ public class LogRedactionTests
         var (_, _, redacted) = LogRedaction.RedactRequest(body);
         Assert.Contains("https://example.com/x.jpg", redacted);
     }
+
+    [Fact]
+    public void RedactInboundRequest_masks_camelcase_pii_and_base64_document()
+    {
+        var body = """{"document":"aGVsbG8gd29ybGQ=","document2":"https://example.com/back.jpg","idNumber":"BR0120150052869","dateOfBirth":"1985-02-15","stateInfo":true}""";
+
+        var redacted = LogRedaction.RedactInboundRequest(body, "application/json")!;
+
+        Assert.Contains("base64 redacted", redacted);            // inline image stripped
+        Assert.Contains("https://example.com/back.jpg", redacted); // URL document kept
+        Assert.DoesNotContain("BR0120150052869", redacted);      // idNumber masked
+        Assert.DoesNotContain("1985-02-15", redacted);           // dateOfBirth redacted
+        Assert.Contains("true", redacted);                       // non-PII flag kept
+    }
+
+    [Fact]
+    public void RedactInboundRequest_masks_pan_and_aadhaar_numbers()
+    {
+        var body = """{"panNumber":"ABCDE1234F","aadhaarNumber":"123412341234"}""";
+
+        var redacted = LogRedaction.RedactInboundRequest(body, "application/json")!;
+
+        Assert.DoesNotContain("ABCDE1234F", redacted);
+        Assert.DoesNotContain("123412341234", redacted);
+        Assert.Contains("*", redacted);
+    }
+
+    [Fact]
+    public void RedactInboundRequest_does_not_parse_multipart_uploads()
+    {
+        var redacted = LogRedaction.RedactInboundRequest("--boundary\r\nlots of binary", "multipart/form-data; boundary=boundary")!;
+        Assert.StartsWith("[multipart form-data upload", redacted);
+    }
+
+    [Fact]
+    public void RedactInboundRequest_handles_empty_and_non_json()
+    {
+        Assert.Null(LogRedaction.RedactInboundRequest(null, "application/json"));
+        Assert.Equal("[unparseable request body redacted]", LogRedaction.RedactInboundRequest("not json", "application/json"));
+    }
 }

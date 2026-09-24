@@ -113,17 +113,26 @@ rate limiting returns `429` on breach.
 
 ## Logging & PII
 
-Each IDfy call is written to SQL Server across three tables:
+Both legs of every call are written to SQL Server across four tables:
 
-- **`IdfyApiCallLogs`** — full request/response (masked) and timing.
+- **`IdfyRequestLogs`** — the inbound call from the internal caller: method,
+  path, redacted request body, the status/response we returned, client IP and
+  timing. Captures calls that never reach IDfy too (e.g. validation `400`s).
+- **`IdfyApiCallLogs`** — the outbound IDfy call: full request/response (masked)
+  and timing.
 - **`IdfyTasks`** — structured, PII-free record per task (type, status, timing,
   error code) for querying.
 - **`IdfyErrorLogs`** — unhandled server exceptions.
 
+Rows from all four correlate on **`TraceId`**, so one inbound request links to
+the IDfy call(s) it triggered.
+
 Document images, extracted personal details and signed document URLs are
-redacted/masked before logging. Writes happen off the request path in a batched
-background writer, so logging never blocks or fails a request. Rows older than
-`LogRetention:RetentionDays` (default 90) are swept automatically.
+redacted/masked before logging (inbound `document`/`document2` images and
+camelCase PII fields too; multipart uploads are logged only as a size note).
+Writes happen off the request path in a batched background writer, so logging
+never blocks or fails a request. Rows older than `LogRetention:RetentionDays`
+(default 90) are swept automatically.
 
 Schema: [`db/log-tables.sql`](db/log-tables.sql) (idempotent; run once per
 environment).

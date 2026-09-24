@@ -41,6 +41,23 @@ public sealed class IdfyTaskLog
     public DateTimeOffset? IdfyCompletedAt { get; set; }
 }
 
+/// <summary>
+/// One inbound HTTP call from an internal caller: the request we received and the response we
+/// returned (both PII-redacted), and timing. Correlate with <see cref="ApiCallLog"/> via TraceId.
+/// </summary>
+public sealed class RequestLog
+{
+    public DateTimeOffset CreatedAt { get; set; }
+    public string? TraceId { get; set; }
+    public string? ClientIp { get; set; }
+    public string Method { get; set; } = string.Empty;
+    public string Path { get; set; } = string.Empty;
+    public int StatusCode { get; set; }
+    public string? RequestBody { get; set; }
+    public string? ResponseBody { get; set; }
+    public long DurationMs { get; set; }
+}
+
 /// <summary>An unhandled exception raised while processing an inbound request.</summary>
 public sealed class ErrorLog
 {

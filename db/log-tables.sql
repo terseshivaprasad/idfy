@@ -46,6 +46,25 @@ BEGIN
     CREATE INDEX IX_IdfyTasks_Status    ON dbo.IdfyTasks (Status);
 END;
 
+-- Inbound HTTP calls from internal callers (request/response redacted). Correlate via TraceId.
+IF OBJECT_ID(N'dbo.IdfyRequestLogs', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.IdfyRequestLogs (
+        Id            bigint IDENTITY  NOT NULL CONSTRAINT PK_IdfyRequestLogs PRIMARY KEY,
+        CreatedAt     datetimeoffset   NOT NULL,
+        TraceId       nvarchar(64)     NULL,
+        ClientIp      nvarchar(64)     NULL,
+        Method        nvarchar(16)     NOT NULL,
+        Path          nvarchar(2048)   NOT NULL,
+        StatusCode    int              NOT NULL,
+        RequestBody   nvarchar(max)    NULL,
+        ResponseBody  nvarchar(max)    NULL,
+        DurationMs    bigint           NOT NULL
+    );
+    CREATE INDEX IX_IdfyRequestLogs_CreatedAt ON dbo.IdfyRequestLogs (CreatedAt);
+    CREATE INDEX IX_IdfyRequestLogs_TraceId   ON dbo.IdfyRequestLogs (TraceId);
+END;
+
 IF OBJECT_ID(N'dbo.IdfyErrorLogs', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.IdfyErrorLogs (
