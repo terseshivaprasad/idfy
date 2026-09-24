@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using Idfy.Api.Data;
 using Microsoft.AspNetCore.Diagnostics;
-using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Idfy.Api.Logging;

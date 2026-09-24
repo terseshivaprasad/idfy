@@ -11,9 +11,6 @@
     <None Update="web.config" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
-  <ItemGroup>
-    <InternalsVisibleTo Include="Idfy.Api.Tests" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.89" />
