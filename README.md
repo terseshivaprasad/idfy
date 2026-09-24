@@ -138,6 +138,41 @@ Configured via `appsettings.json`, environment variables or user-secrets:
 | `ApiAuth:Keys` | Accepted `x-api-key` values (at least one required). |
 | `RateLimit`, `LogRetention` | Rate-limit and retention settings. |
 
+### Secrets
+
+The three secrets — `ApiAuth:Keys`, `Idfy:ApiKey` and `ConnectionStrings:LogDb`
+— must **never** be committed. `appsettings.json` ships with empty placeholders
+and the app fails to start if `ApiAuth:Keys` is empty (fail-closed).
+
+Provide them per environment as **environment variables** (config keys map with
+`__` for nesting):
+
+```
+ApiAuth__Keys__0=<generated-key>      # one entry per internal caller (…__1, …__2)
+Idfy__AccountId=<account-id>
+Idfy__ApiKey=<idfy-api-key>
+ConnectionStrings__LogDb=<sql-connection-string>
+```
+
+Generate an `x-api-key` value with `openssl rand -base64 32`. Rotate/revoke by
+changing the value and restarting.
+
+**On IIS**, set these on the app pool (*Advanced Settings → Environment
+Variables*) or in the server's `web.config` (which stays on the server, not in
+the repo):
+
+```xml
+<aspNetCore ...>
+  <environmentVariables>
+    <environmentVariable name="ApiAuth__Keys__0" value="<generated-key>" />
+    <environmentVariable name="Idfy__ApiKey" value="<idfy-api-key>" />
+    <environmentVariable name="ConnectionStrings__LogDb" value="<sql-connection-string>" />
+  </environmentVariables>
+</aspNetCore>
+```
+
+For local development, `dotnet user-secrets` is the convenient equivalent.
+
 ## Running locally
 
 ```sh
