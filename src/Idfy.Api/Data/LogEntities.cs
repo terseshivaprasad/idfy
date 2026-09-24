@@ -16,6 +16,31 @@ public sealed class ApiCallLog
     public string? Exception { get; set; }
 }
 
+/// <summary>
+/// One IDfy task, in structured columns (no PII): the queryable domain record behind an
+/// <see cref="ApiCallLog"/>. Populated from the IDfy request/response envelope.
+/// </summary>
+public sealed class IdfyTaskLog
+{
+    public DateTimeOffset CreatedAt { get; set; }
+    public string? TraceId { get; set; }
+    public string? TaskId { get; set; }
+    public string? GroupId { get; set; }
+    public string? RequestId { get; set; }
+    /// <summary>IDfy task type: document, ind_pan, ind_aadhaar, ind_driving_license, ind_passport.</summary>
+    public string? TaskType { get; set; }
+    /// <summary>validate or extract.</summary>
+    public string? Action { get; set; }
+    /// <summary>completed, failed, or null when the call never returned.</summary>
+    public string? Status { get; set; }
+    public int? HttpStatus { get; set; }
+    /// <summary>IDfy error code on failure (e.g. INVALID_IMAGE, INSUFFICIENT_CREDITS).</summary>
+    public string? ErrorCode { get; set; }
+    public long DurationMs { get; set; }
+    public DateTimeOffset? IdfyCreatedAt { get; set; }
+    public DateTimeOffset? IdfyCompletedAt { get; set; }
+}
+
 /// <summary>An unhandled exception raised while processing an inbound request.</summary>
 public sealed class ErrorLog
 {

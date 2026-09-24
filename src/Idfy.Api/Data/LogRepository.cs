@@ -20,8 +20,19 @@ public sealed class LogRepository(string connectionString)
             (@CreatedAt, @TraceId, @Method, @Path, @ExceptionType, @Message, @Details)
         """;
 
+    private const string InsertIdfyTask = """
+        INSERT INTO IdfyTasks
+            (CreatedAt, TraceId, TaskId, GroupId, RequestId, TaskType, Action, Status, HttpStatus, ErrorCode, DurationMs, IdfyCreatedAt, IdfyCompletedAt)
+        VALUES
+            (@CreatedAt, @TraceId, @TaskId, @GroupId, @RequestId, @TaskType, @Action, @Status, @HttpStatus, @ErrorCode, @DurationMs, @IdfyCreatedAt, @IdfyCompletedAt)
+        """;
+
     /// <summary>Inserts a batch in one transaction.</summary>
-    public async Task InsertAsync(IReadOnlyCollection<ApiCallLog> apiCalls, IReadOnlyCollection<ErrorLog> errors, CancellationToken ct)
+    public async Task InsertAsync(
+        IReadOnlyCollection<ApiCallLog> apiCalls,
+        IReadOnlyCollection<ErrorLog> errors,
+        IReadOnlyCollection<IdfyTaskLog> tasks,
+        CancellationToken ct)
     {
         await using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync(ct);
@@ -32,6 +43,8 @@ public sealed class LogRepository(string connectionString)
             await connection.ExecuteAsync(new CommandDefinition(InsertApiCallLog, apiCalls, tx, cancellationToken: ct));
         if (errors.Count > 0)
             await connection.ExecuteAsync(new CommandDefinition(InsertErrorLog, errors, tx, cancellationToken: ct));
+        if (tasks.Count > 0)
+            await connection.ExecuteAsync(new CommandDefinition(InsertIdfyTask, tasks, tx, cancellationToken: ct));
 
         await tx.CommitAsync(ct);
     }
@@ -52,7 +65,7 @@ public sealed class LogRepository(string connectionString)
         await connection.OpenAsync(ct);
 
         var total = 0;
-        foreach (var table in new[] { "ApiCallLogs", "ErrorLogs" })
+        foreach (var table in new[] { "ApiCallLogs", "ErrorLogs", "IdfyTasks" })
         {
             int deleted;
             do

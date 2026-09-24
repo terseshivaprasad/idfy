@@ -25,6 +25,7 @@ public sealed class IdfyLoggingHandler(DbLogQueue queue) : DelegatingHandler
             RequestBody = loggedBody,
         };
 
+        string? rawResponse = null;
         var sw = Stopwatch.StartNew();
         try
         {
@@ -32,7 +33,8 @@ public sealed class IdfyLoggingHandler(DbLogQueue queue) : DelegatingHandler
             // Buffer so the body can be read here and again by the caller.
             await response.Content.LoadIntoBufferAsync(ct);
             log.StatusCode = (int)response.StatusCode;
-            log.ResponseBody = LogRedaction.MaskResponse(await response.Content.ReadAsStringAsync(ct));
+            rawResponse = await response.Content.ReadAsStringAsync(ct);
+            log.ResponseBody = LogRedaction.MaskResponse(rawResponse);
             return response;
         }
         catch (Exception ex)
@@ -44,6 +46,29 @@ public sealed class IdfyLoggingHandler(DbLogQueue queue) : DelegatingHandler
         {
             log.DurationMs = sw.ElapsedMilliseconds;
             queue.Enqueue(log);
+            queue.Enqueue(BuildTaskLog(log, requestBody, rawResponse));
         }
+    }
+
+    /// <summary>Structured, PII-free row for the IdfyTasks table, parsed from the same envelope.</summary>
+    private static IdfyTaskLog BuildTaskLog(ApiCallLog log, string? requestBody, string? rawResponse)
+    {
+        var meta = IdfyTaskMetadata.Parse(requestBody, rawResponse);
+        return new IdfyTaskLog
+        {
+            CreatedAt = log.CreatedAt,
+            TraceId = log.TraceId,
+            TaskId = meta.TaskId,
+            GroupId = meta.GroupId,
+            RequestId = meta.RequestId,
+            TaskType = meta.TaskType,
+            Action = meta.Action,
+            Status = meta.Status,
+            HttpStatus = log.StatusCode,
+            ErrorCode = meta.ErrorCode,
+            DurationMs = log.DurationMs,
+            IdfyCreatedAt = meta.IdfyCreatedAt,
+            IdfyCompletedAt = meta.IdfyCompletedAt,
+        };
     }
 }

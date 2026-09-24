@@ -21,6 +21,31 @@ BEGIN
     CREATE INDEX IX_ApiCallLogs_TraceId   ON dbo.ApiCallLogs (TraceId);
 END;
 
+-- Structured, PII-free record per IDfy task (queryable domain view of ApiCallLogs).
+IF OBJECT_ID(N'dbo.IdfyTasks', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.IdfyTasks (
+        Id              bigint IDENTITY  NOT NULL CONSTRAINT PK_IdfyTasks PRIMARY KEY,
+        CreatedAt       datetimeoffset   NOT NULL,
+        TraceId         nvarchar(64)     NULL,
+        TaskId          nvarchar(64)     NULL,
+        GroupId         nvarchar(64)     NULL,
+        RequestId       nvarchar(64)     NULL,
+        TaskType        nvarchar(64)     NULL,
+        Action          nvarchar(32)     NULL,
+        Status          nvarchar(32)     NULL,
+        HttpStatus      int              NULL,
+        ErrorCode       nvarchar(64)     NULL,
+        DurationMs      bigint           NOT NULL,
+        IdfyCreatedAt   datetimeoffset   NULL,
+        IdfyCompletedAt datetimeoffset   NULL
+    );
+    CREATE INDEX IX_IdfyTasks_CreatedAt ON dbo.IdfyTasks (CreatedAt);
+    CREATE INDEX IX_IdfyTasks_TaskId    ON dbo.IdfyTasks (TaskId);
+    CREATE INDEX IX_IdfyTasks_TaskType  ON dbo.IdfyTasks (TaskType);
+    CREATE INDEX IX_IdfyTasks_Status    ON dbo.IdfyTasks (Status);
+END;
+
 IF OBJECT_ID(N'dbo.ErrorLogs', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.ErrorLogs (
