@@ -29,6 +29,22 @@ public sealed record IdfyPassportData(
     [property: JsonPropertyName("document1")] string Document1,
     [property: JsonPropertyName("document2"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Document2);
 
+/// <summary>data for POST /v3/tasks/async/verify_with_source/ind_driving_license.</summary>
+public sealed record IdfyDrivingLicenseVerifyData(
+    [property: JsonPropertyName("id_number")] string IdNumber,
+    [property: JsonPropertyName("date_of_birth")] string DateOfBirth,
+    [property: JsonPropertyName("advanced_details"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IdfyDlVerifyAdvancedDetails? AdvancedDetails);
+
+public sealed record IdfyDlVerifyAdvancedDetails(
+    [property: JsonPropertyName("state_info"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] bool? StateInfo,
+    [property: JsonPropertyName("age_info"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] bool? AgeInfo);
+
+/// <summary>Response to an async task submission: only a request_id to poll with.</summary>
+public sealed record IdfyAsyncSubmitResponse
+{
+    [JsonPropertyName("request_id")] public string? RequestId { get; init; }
+}
+
 public sealed record IdfyTaskResponse<TResult>
 {
     [JsonPropertyName("action")] public string? Action { get; init; }
@@ -119,6 +135,49 @@ public sealed record PassportOutput
 public sealed record DrivingLicenseResult
 {
     [JsonPropertyName("extraction_output")] public DrivingLicenseOutput? ExtractionOutput { get; init; }
+}
+
+public sealed record DrivingLicenseSourceResult
+{
+    [JsonPropertyName("source_output")] public DrivingLicenseSourceOutput? SourceOutput { get; init; }
+}
+
+public sealed record DrivingLicenseSourceOutput
+{
+    [JsonPropertyName("address")] public string? Address { get; init; }
+    [JsonPropertyName("badge_details")] public string? BadgeDetails { get; init; }
+    [JsonPropertyName("card_serial_no")] public string? CardSerialNo { get; init; }
+    [JsonPropertyName("city")] public string? City { get; init; }
+    [JsonPropertyName("cov_details")] public IReadOnlyList<CovDetail>? CovDetails { get; init; }
+    [JsonPropertyName("date_of_issue")] public string? DateOfIssue { get; init; }
+    [JsonPropertyName("date_of_last_transaction")] public string? DateOfLastTransaction { get; init; }
+    [JsonPropertyName("dl_status")] public string? DlStatus { get; init; }
+    [JsonPropertyName("dob")] public string? Dob { get; init; }
+    [JsonPropertyName("face_image")] public string? FaceImage { get; init; }
+    [JsonPropertyName("gender")] public string? Gender { get; init; }
+    [JsonPropertyName("hazardous_valid_till")] public string? HazardousValidTill { get; init; }
+    [JsonPropertyName("hill_valid_till")] public string? HillValidTill { get; init; }
+    [JsonPropertyName("id_number")] public string? IdNumber { get; init; }
+    [JsonPropertyName("issuing_rto_name")] public string? IssuingRtoName { get; init; }
+    [JsonPropertyName("last_transacted_at")] public string? LastTransactedAt { get; init; }
+    [JsonPropertyName("name")] public string? Name { get; init; }
+    [JsonPropertyName("nt_validity_from")] public string? NtValidityFrom { get; init; }
+    [JsonPropertyName("nt_validity_to")] public string? NtValidityTo { get; init; }
+    [JsonPropertyName("relatives_name")] public string? RelativesName { get; init; }
+    [JsonPropertyName("source")] public string? Source { get; init; }
+    [JsonPropertyName("status")] public string? Status { get; init; }
+    [JsonPropertyName("t_validity_from")] public string? TValidityFrom { get; init; }
+    [JsonPropertyName("t_validity_to")] public string? TValidityTo { get; init; }
+    // Present only when requested via advanced_details.
+    [JsonPropertyName("state")] public string? State { get; init; }
+    [JsonPropertyName("is_minor")] public bool? IsMinor { get; init; }
+}
+
+public sealed record CovDetail
+{
+    [JsonPropertyName("category")] public string? Category { get; init; }
+    [JsonPropertyName("cov")] public string? Cov { get; init; }
+    [JsonPropertyName("issue_date")] public string? IssueDate { get; init; }
 }
 
 public sealed record DrivingLicenseOutput

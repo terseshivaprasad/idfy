@@ -40,6 +40,22 @@ public sealed class FakeIdfyClient : IIdfyClient
         LastPassportData = r.Data;
         return Task.FromResult(Result(new IdfyTaskResponse<PassportResult> { Status = "completed", Type = "ind_passport" }));
     }
+
+    public IdfyDrivingLicenseVerifyData? LastVerifyData { get; private set; }
+    public bool VerifyResultReady { get; set; } = true;
+
+    public Task<IdfyAsyncSubmitResponse> SubmitDrivingLicenseVerificationAsync(
+        IdfyTaskRequest<IdfyDrivingLicenseVerifyData> r, CancellationToken ct = default)
+    {
+        LastVerifyData = r.Data;
+        return Task.FromResult(Result(new IdfyAsyncSubmitResponse { RequestId = "req-abc" }));
+    }
+
+    public Task<IdfyTaskResponse<DrivingLicenseSourceResult>?> GetDrivingLicenseVerificationAsync(
+        string requestId, CancellationToken ct = default) =>
+        Task.FromResult(Result(VerifyResultReady
+            ? new IdfyTaskResponse<DrivingLicenseSourceResult> { Status = "completed", Type = "ind_driving_license" }
+            : null));
 }
 
 public sealed class IntegrationTests : IClassFixture<IntegrationTests.Factory>
@@ -188,6 +204,45 @@ public sealed class IntegrationTests : IClassFixture<IntegrationTests.Factory>
             Assert.Contains("traceId", body);
         }
         finally { _factory.Idfy.ThrowOnCall = null; }
+    }
+
+    [Fact]
+    public async Task Dl_verify_submit_returns_request_id()
+    {
+        var resp = await Client().PostAsJsonAsync("/api/driving-license/verify",
+            new { idNumber = "BR0120150052869", dateOfBirth = "1985-02-15", stateInfo = true, ageInfo = true });
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        Assert.Equal(true, _factory.Idfy.LastVerifyData!.AdvancedDetails!.StateInfo);
+        Assert.Equal("1985-02-15", _factory.Idfy.LastVerifyData!.DateOfBirth);
+    }
+
+    [Theory]
+    [InlineData("""{"idNumber":"BR0120150052869"}""")]              // missing dob
+    [InlineData("""{"idNumber":"BR0120150052869","dateOfBirth":"15-02-1985"}""")] // bad dob format
+    [InlineData("""{"idNumber":"BR","dateOfBirth":"1985-02-15"}""")] // id too short
+    public async Task Dl_verify_validates_input(string body)
+    {
+        var resp = await Client().PostAsync("/api/driving-license/verify", Json(body));
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task Dl_verify_poll_returns_202_until_ready()
+    {
+        _factory.Idfy.VerifyResultReady = false;
+        try
+        {
+            var resp = await Client().GetAsync("/api/driving-license/verify/req-abc");
+            Assert.Equal(HttpStatusCode.Accepted, resp.StatusCode);
+        }
+        finally { _factory.Idfy.VerifyResultReady = true; }
+    }
+
+    [Fact]
+    public async Task Dl_verify_poll_returns_result_when_ready()
+    {
+        var resp = await Client().GetAsync("/api/driving-license/verify/req-abc");
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
     }
 
     [Fact]

@@ -79,6 +79,29 @@ public sealed class ExtractPassportRequest
     public Guid? GroupId { get; set; }
 }
 
+/// <summary>Request for async driving-license verification against the government source.</summary>
+public sealed class VerifyDrivingLicenseRequest
+{
+    /// <summary>Driving-licence number.</summary>
+    [Required]
+    [StringLength(32, MinimumLength = 5)]
+    public string IdNumber { get; set; } = string.Empty;
+
+    /// <summary>Holder's date of birth (YYYY-MM-DD).</summary>
+    [Required]
+    public DateOnly? DateOfBirth { get; set; }
+
+    /// <summary>Also return the issuing state as a separate field.</summary>
+    public bool StateInfo { get; set; }
+
+    /// <summary>Also return whether the holder is a minor (is_minor).</summary>
+    public bool AgeInfo { get; set; }
+
+    public Guid? TaskId { get; set; }
+
+    public Guid? GroupId { get; set; }
+}
+
 /// <summary>Request for Aadhaar extraction. Consent is mandatory (UIDAI/DPDP).</summary>
 public sealed class ExtractAadhaarRequest
 {

@@ -20,6 +20,14 @@ public interface IIdfyClient
 
     Task<IdfyTaskResponse<PassportResult>> ExtractPassportAsync(
         IdfyTaskRequest<IdfyPassportData> request, CancellationToken ct = default);
+
+    /// <summary>Submits the async driving-license verification; returns the request_id to poll with.</summary>
+    Task<IdfyAsyncSubmitResponse> SubmitDrivingLicenseVerificationAsync(
+        IdfyTaskRequest<IdfyDrivingLicenseVerifyData> request, CancellationToken ct = default);
+
+    /// <summary>Polls an async task by request_id. Null means the result is not ready yet.</summary>
+    Task<IdfyTaskResponse<DrivingLicenseSourceResult>?> GetDrivingLicenseVerificationAsync(
+        string requestId, CancellationToken ct = default);
 }
 
 /// <summary>A non-success response from IDfy, with the error fields parsed when the body is JSON.</summary>
@@ -85,7 +93,41 @@ public sealed class IdfyClient(HttpClient http, ILogger<IdfyClient> logger) : II
         IdfyTaskRequest<IdfyPassportData> request, CancellationToken ct = default) =>
         PostAsync<IdfyPassportData, PassportResult>("v3/tasks/sync/extract/ind_passport", request, ct);
 
+    public async Task<IdfyAsyncSubmitResponse> SubmitDrivingLicenseVerificationAsync(
+        IdfyTaskRequest<IdfyDrivingLicenseVerifyData> request, CancellationToken ct = default)
+    {
+        var (body, status) = await PostRawAsync("v3/tasks/async/verify_with_source/ind_driving_license", request, ct);
+        try
+        {
+            return JsonSerializer.Deserialize<IdfyAsyncSubmitResponse>(body) ?? throw new IdfyApiException(status, body);
+        }
+        catch (JsonException)
+        {
+            throw new IdfyApiException(status, body);
+        }
+    }
+
+    public async Task<IdfyTaskResponse<DrivingLicenseSourceResult>?> GetDrivingLicenseVerificationAsync(
+        string requestId, CancellationToken ct = default)
+    {
+        var path = $"v3/tasks?request_id={Uri.EscapeDataString(requestId)}";
+        using var response = await http.GetAsync(path, ct);
+        var body = await response.Content.ReadAsStringAsync(ct);
+
+        if (!response.IsSuccessStatusCode)
+            throw Fail(path, null, response.StatusCode, body);
+
+        return DeserializeOrNull<DrivingLicenseSourceResult>(body, response.StatusCode);
+    }
+
     private async Task<IdfyTaskResponse<TResult>> PostAsync<TData, TResult>(
+        string path, IdfyTaskRequest<TData> request, CancellationToken ct)
+    {
+        var (body, status) = await PostRawAsync(path, request, ct);
+        return Deserialize<TResult>(body, status);
+    }
+
+    private async Task<(string Body, HttpStatusCode Status)> PostRawAsync<TData>(
         string path, IdfyTaskRequest<TData> request, CancellationToken ct)
     {
         // Buffer so the request carries Content-Length instead of chunked encoding.
@@ -94,17 +136,36 @@ public sealed class IdfyClient(HttpClient http, ILogger<IdfyClient> logger) : II
         using var response = await http.PostAsync(path, content, ct);
 
         var body = await response.Content.ReadAsStringAsync(ct);
-
         if (!response.IsSuccessStatusCode)
+            throw Fail(path, request.TaskId, response.StatusCode, body);
+
+        return (body, response.StatusCode);
+    }
+
+    private IdfyApiException Fail(string path, string? taskId, HttpStatusCode status, string body)
+    {
+        var ex = new IdfyApiException(status, body);
+        logger.Log(ex.IsCallerError ? LogLevel.Warning : LogLevel.Error,
+            "IDfy {Path} failed for task {TaskId}: {Status} {ErrorCode} {Body}",
+            path, taskId, (int)status, ex.ErrorCode, body);
+        return ex;
+    }
+
+    /// <summary>Like <see cref="Deserialize{TResult}"/> but returns null for an empty array (task not ready).</summary>
+    private static IdfyTaskResponse<TResult>? DeserializeOrNull<TResult>(string body, HttpStatusCode statusCode)
+    {
+        try
         {
-            var ex = new IdfyApiException(response.StatusCode, body);
-            logger.Log(ex.IsCallerError ? LogLevel.Warning : LogLevel.Error,
-                "IDfy {Path} failed for task {TaskId}: {Status} {ErrorCode} {Body}",
-                path, request.TaskId, (int)response.StatusCode, ex.ErrorCode, body);
-            throw ex;
+            using var doc = JsonDocument.Parse(body);
+            if (doc.RootElement.ValueKind == JsonValueKind.Array && doc.RootElement.GetArrayLength() == 0)
+                return null;
+        }
+        catch (JsonException)
+        {
+            throw new IdfyApiException(statusCode, body);
         }
 
-        return Deserialize<TResult>(body, response.StatusCode);
+        return Deserialize<TResult>(body, statusCode);
     }
 
     /// <summary>Some tasks (e.g. driving license) wrap the task object in a single-element array.</summary>

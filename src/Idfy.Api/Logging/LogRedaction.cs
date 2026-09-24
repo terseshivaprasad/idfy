@@ -37,6 +37,13 @@ public static class LogRedaction
         ["place_of_birth"] = _ => Redacted,
         ["place_of_issue"] = _ => Redacted,
         ["nationality"] = _ => Redacted,
+        // verify_with_source (driving licence) source_output, and the request's id_number/date_of_birth.
+        ["name"] = _ => Redacted,
+        ["dob"] = _ => Redacted,
+        ["relatives_name"] = _ => Redacted,
+        ["city"] = _ => Redacted,
+        ["card_serial_no"] = MaskId,
+        ["face_image"] = _ => Redacted,
     };
 
     /// <summary>Parses a body once; returns null for empty or non-JSON content.</summary>
@@ -71,6 +78,9 @@ public static class LogRedaction
         {
             root["data"]!["document1"] = $"[base64 redacted, {value.Length} chars]";
         }
+
+        // Also mask any PII the request itself carries (e.g. id_number, date_of_birth for verify tasks).
+        Mask(root);
 
         return (root["task_id"]?.ToString(), root["group_id"]?.ToString(), root.ToJsonString(WriteOptions));
     }

@@ -89,6 +89,37 @@ public class LogRedactionTests
     }
 
     [Fact]
+    public void RedactRequest_masks_pii_in_verify_request()
+    {
+        var body = """{"task_id":"t1","group_id":"g1","data":{"id_number":"BR0120150052869","date_of_birth":"1985-02-15"}}""";
+
+        var (taskId, _, redacted) = LogRedaction.RedactRequest(body);
+
+        Assert.Equal("t1", taskId);
+        Assert.DoesNotContain("BR0120150052869", redacted);   // id masked
+        Assert.DoesNotContain("1985-02-15", redacted);        // dob redacted
+        Assert.Contains("[redacted]", redacted);
+    }
+
+    [Fact]
+    public void MaskResponse_masks_verify_source_output()
+    {
+        var body = """
+            [{"type":"ind_driving_license","result":{"source_output":{
+              "name":"ABC DEF","dob":"1985-02-15","city":"Patna","relatives_name":"XYZ",
+              "id_number":"BR-****52869","card_serial_no":"SER12345678","dl_status":"Active"}}}]
+            """;
+
+        var masked = LogRedaction.MaskResponse(body);
+
+        Assert.Equal("[redacted]", Field(masked, "result", "source_output", "name"));
+        Assert.Equal("[redacted]", Field(masked, "result", "source_output", "dob"));
+        Assert.Equal("[redacted]", Field(masked, "result", "source_output", "city"));
+        Assert.Equal("[redacted]", Field(masked, "result", "source_output", "relatives_name"));
+        Assert.Equal("Active", Field(masked, "result", "source_output", "dl_status")); // status kept
+    }
+
+    [Fact]
     public void RedactRequest_keeps_url_documents()
     {
         var body = """{"task_id":"t1","group_id":"g1","data":{"document1":"https://example.com/x.jpg"}}""";

@@ -70,6 +70,27 @@ internal static class IdfyEndpointSupport
         }
     }
 
+    /// <summary>Like <see cref="CallAsync{T}"/> but the action returns the final IResult (e.g. Ok/Accepted).</summary>
+    public static async Task<IResult> GuardAsync(Func<Task<IResult>> call, CancellationToken ct)
+    {
+        try
+        {
+            return await call();
+        }
+        catch (IdfyApiException ex)
+        {
+            return MapIdfyError(ex);
+        }
+        catch (TaskCanceledException) when (!ct.IsCancellationRequested)
+        {
+            return TypedResults.Problem("IDfy request timed out.", statusCode: StatusCodes.Status504GatewayTimeout);
+        }
+        catch (HttpRequestException ex)
+        {
+            return TypedResults.Problem($"Could not reach IDfy: {ex.Message}", statusCode: StatusCodes.Status502BadGateway);
+        }
+    }
+
     /// <summary>
     /// Caller-fixable IDfy errors keep their status and IDfy's code/message. Our own problems
     /// (credentials, credits) and IDfy outages become 502 without internal detail; they are logged

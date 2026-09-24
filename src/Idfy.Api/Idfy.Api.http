@@ -133,4 +133,20 @@ Content-Type: image/jpeg
 < ./back.jpg
 --boundary--
 
+### Driving-license verification (async) - submit, returns requestId
+POST {{Idfy.Api_HostAddress}}/api/driving-license/verify
+x-api-key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "idNumber": "BR0120150052869",
+  "dateOfBirth": "1985-02-15",
+  "stateInfo": true,
+  "ageInfo": true
+}
+
+### Driving-license verification (async) - poll by requestId (202 while processing)
+GET {{Idfy.Api_HostAddress}}/api/driving-license/verify/a957d82c-987c-4fa9-b69f-6765dc3c1035
+x-api-key: {{apiKey}}
+
 ###
