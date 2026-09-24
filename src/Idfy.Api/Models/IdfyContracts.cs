@@ -82,6 +82,29 @@ public sealed record AadhaarExtractionResult
     [JsonPropertyName("qr_output")] public AadhaarOutput? QrOutput { get; init; }
 }
 
+public sealed record DrivingLicenseResult
+{
+    [JsonPropertyName("extraction_output")] public DrivingLicenseOutput? ExtractionOutput { get; init; }
+}
+
+public sealed record DrivingLicenseOutput
+{
+    [JsonPropertyName("address")] public string? Address { get; init; }
+    [JsonPropertyName("date_of_birth")] public string? DateOfBirth { get; init; }
+    [JsonPropertyName("date_of_validity")] public string? DateOfValidity { get; init; }
+    [JsonPropertyName("district")] public string? District { get; init; }
+    [JsonPropertyName("fathers_name")] public string? FathersName { get; init; }
+    [JsonPropertyName("id_number")] public string? IdNumber { get; init; }
+    [JsonPropertyName("is_scanned")] public bool? IsScanned { get; init; }
+    [JsonPropertyName("issue_dates")] public IDictionary<string, string?>? IssueDates { get; init; }
+    [JsonPropertyName("name_on_card")] public string? NameOnCard { get; init; }
+    [JsonPropertyName("pincode")] public string? Pincode { get; init; }
+    [JsonPropertyName("state")] public string? State { get; init; }
+    [JsonPropertyName("street_address")] public string? StreetAddress { get; init; }
+    [JsonPropertyName("type")] public IReadOnlyList<string>? Type { get; init; }
+    [JsonPropertyName("validity")] public IDictionary<string, string?>? Validity { get; init; }
+}
+
 public sealed record AadhaarOutput
 {
     [JsonPropertyName("address")] public string? Address { get; init; }

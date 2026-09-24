@@ -76,4 +76,23 @@ Content-Disposition: form-data; name="consent"
 true
 --boundary--
 
+### Driving-license extraction (OCR) by URL / Base64
+POST {{Idfy.Api_HostAddress}}/api/driving-license/extract
+Content-Type: application/json
+
+{
+  "document": "https://example.com/dl.jpg"
+}
+
+### Driving-license extraction (OCR) by file upload
+POST {{Idfy.Api_HostAddress}}/api/driving-license/extract/upload
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="dl.jpg"
+Content-Type: image/jpeg
+
+< ./dl.jpg
+--boundary--
+
 ###

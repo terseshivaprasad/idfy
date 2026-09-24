@@ -51,6 +51,18 @@ public sealed class ExtractPanRequest
     public Guid? GroupId { get; set; }
 }
 
+/// <summary>Request for driving-license extraction. TaskId/GroupId are generated when omitted.</summary>
+public sealed class ExtractDrivingLicenseRequest
+{
+    /// <summary>Publicly accessible image URL, or the image as Base64.</summary>
+    [Required, UrlOrBase64]
+    public string Document { get; set; } = string.Empty;
+
+    public Guid? TaskId { get; set; }
+
+    public Guid? GroupId { get; set; }
+}
+
 /// <summary>Request for Aadhaar extraction. Consent is mandatory (UIDAI/DPDP).</summary>
 public sealed class ExtractAadhaarRequest
 {

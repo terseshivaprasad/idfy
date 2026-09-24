@@ -50,5 +50,6 @@ app.UseHttpsRedirection();
 app.MapDocumentEndpoints();
 app.MapPanEndpoints();
 app.MapAadhaarEndpoints();
+app.MapDrivingLicenseEndpoints();
 
 app.Run();

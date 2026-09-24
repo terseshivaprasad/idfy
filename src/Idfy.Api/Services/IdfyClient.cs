@@ -14,6 +14,9 @@ public interface IIdfyClient
 
     Task<IdfyTaskResponse<AadhaarExtractionResult>> ExtractAadhaarAsync(
         IdfyTaskRequest<IdfyAadhaarData> request, CancellationToken ct = default);
+
+    Task<IdfyTaskResponse<DrivingLicenseResult>> ExtractDrivingLicenseAsync(
+        IdfyTaskRequest<IdfyDocumentData> request, CancellationToken ct = default);
 }
 
 /// <summary>A non-success response from IDfy, with the error fields parsed when the body is JSON.</summary>
@@ -70,6 +73,11 @@ public sealed class IdfyClient(HttpClient http, ILogger<IdfyClient> logger) : II
         IdfyTaskRequest<IdfyAadhaarData> request, CancellationToken ct = default) =>
         PostAsync<IdfyAadhaarData, AadhaarExtractionResult>("v3/tasks/sync/extract/ind_aadhaar", request, ct);
 
+    public Task<IdfyTaskResponse<DrivingLicenseResult>> ExtractDrivingLicenseAsync(
+        IdfyTaskRequest<IdfyDocumentData> request, CancellationToken ct = default) =>
+        // This task returns the task object wrapped in a single-element array.
+        PostAsync<IdfyDocumentData, DrivingLicenseResult>("v3/tasks/sync/extract/ind_driving_license", request, ct);
+
     private async Task<IdfyTaskResponse<TResult>> PostAsync<TData, TResult>(
         string path, IdfyTaskRequest<TData> request, CancellationToken ct)
     {
@@ -78,9 +86,10 @@ public sealed class IdfyClient(HttpClient http, ILogger<IdfyClient> logger) : II
         await content.LoadIntoBufferAsync(ct);
         using var response = await http.PostAsync(path, content, ct);
 
+        var body = await response.Content.ReadAsStringAsync(ct);
+
         if (!response.IsSuccessStatusCode)
         {
-            var body = await response.Content.ReadAsStringAsync(ct);
             var ex = new IdfyApiException(response.StatusCode, body);
             logger.Log(ex.IsCallerError ? LogLevel.Warning : LogLevel.Error,
                 "IDfy {Path} failed for task {TaskId}: {Status} {ErrorCode} {Body}",
@@ -88,7 +97,30 @@ public sealed class IdfyClient(HttpClient http, ILogger<IdfyClient> logger) : II
             throw ex;
         }
 
-        return await response.Content.ReadFromJsonAsync<IdfyTaskResponse<TResult>>(ct)
-               ?? throw new IdfyApiException(response.StatusCode, "Empty response body.");
+        return Deserialize<TResult>(body, response.StatusCode);
+    }
+
+    /// <summary>Some tasks (e.g. driving license) wrap the task object in a single-element array.</summary>
+    private static IdfyTaskResponse<TResult> Deserialize<TResult>(string body, HttpStatusCode statusCode)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            var element = doc.RootElement;
+            if (element.ValueKind == JsonValueKind.Array)
+            {
+                var first = element.EnumerateArray();
+                if (!first.MoveNext())
+                    throw new IdfyApiException(statusCode, body);
+                element = first.Current;
+            }
+
+            return element.Deserialize<IdfyTaskResponse<TResult>>()
+                   ?? throw new IdfyApiException(statusCode, body);
+        }
+        catch (JsonException)
+        {
+            throw new IdfyApiException(statusCode, body);
+        }
     }
 }
