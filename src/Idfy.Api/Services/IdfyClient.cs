@@ -11,6 +11,9 @@ public interface IIdfyClient
 
     Task<IdfyTaskResponse<PanExtractionResult>> ExtractPanAsync(
         IdfyTaskRequest<IdfyDocumentData> request, CancellationToken ct = default);
+
+    Task<IdfyTaskResponse<AadhaarExtractionResult>> ExtractAadhaarAsync(
+        IdfyTaskRequest<IdfyAadhaarData> request, CancellationToken ct = default);
 }
 
 /// <summary>A non-success response from IDfy, with the error fields parsed when the body is JSON.</summary>
@@ -62,6 +65,10 @@ public sealed class IdfyClient(HttpClient http, ILogger<IdfyClient> logger) : II
     public Task<IdfyTaskResponse<PanExtractionResult>> ExtractPanAsync(
         IdfyTaskRequest<IdfyDocumentData> request, CancellationToken ct = default) =>
         PostAsync<IdfyDocumentData, PanExtractionResult>("v3/tasks/sync/extract/ind_pan", request, ct);
+
+    public Task<IdfyTaskResponse<AadhaarExtractionResult>> ExtractAadhaarAsync(
+        IdfyTaskRequest<IdfyAadhaarData> request, CancellationToken ct = default) =>
+        PostAsync<IdfyAadhaarData, AadhaarExtractionResult>("v3/tasks/sync/extract/ind_aadhaar", request, ct);
 
     private async Task<IdfyTaskResponse<TResult>> PostAsync<TData, TResult>(
         string path, IdfyTaskRequest<TData> request, CancellationToken ct)

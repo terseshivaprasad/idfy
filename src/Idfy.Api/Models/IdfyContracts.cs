@@ -19,6 +19,11 @@ public sealed record IdfyValidateDocumentData(
 public sealed record IdfyDocumentData(
     [property: JsonPropertyName("document1")] string Document1);
 
+/// <summary>data for POST /v3/tasks/sync/extract/ind_aadhaar. Consent is "yes".</summary>
+public sealed record IdfyAadhaarData(
+    [property: JsonPropertyName("document1")] string Document1,
+    [property: JsonPropertyName("consent")] string Consent);
+
 public sealed record IdfyTaskResponse<TResult>
 {
     [JsonPropertyName("action")] public string? Action { get; init; }
@@ -69,4 +74,27 @@ public sealed record PanExtractionOutput
     [JsonPropertyName("minor")] public bool? Minor { get; init; }
     [JsonPropertyName("name_on_card")] public string? NameOnCard { get; init; }
     [JsonPropertyName("pan_type")] public string? PanType { get; init; }
+}
+
+public sealed record AadhaarExtractionResult
+{
+    [JsonPropertyName("extraction_output")] public AadhaarOutput? ExtractionOutput { get; init; }
+    [JsonPropertyName("qr_output")] public AadhaarOutput? QrOutput { get; init; }
+}
+
+public sealed record AadhaarOutput
+{
+    [JsonPropertyName("address")] public string? Address { get; init; }
+    [JsonPropertyName("date_of_birth")] public string? DateOfBirth { get; init; }
+    [JsonPropertyName("district")] public string? District { get; init; }
+    [JsonPropertyName("fathers_name")] public string? FathersName { get; init; }
+    [JsonPropertyName("gender")] public string? Gender { get; init; }
+    [JsonPropertyName("house_number")] public string? HouseNumber { get; init; }
+    [JsonPropertyName("id_number")] public string? IdNumber { get; init; }
+    [JsonPropertyName("is_scanned")] public bool? IsScanned { get; init; }
+    [JsonPropertyName("name_on_card")] public string? NameOnCard { get; init; }
+    [JsonPropertyName("pincode")] public string? Pincode { get; init; }
+    [JsonPropertyName("state")] public string? State { get; init; }
+    [JsonPropertyName("street_address")] public string? StreetAddress { get; init; }
+    [JsonPropertyName("year_of_birth")] public string? YearOfBirth { get; init; }
 }

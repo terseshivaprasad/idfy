@@ -29,6 +29,8 @@ public sealed class IdfyOptions
     public ImageLimits DocumentImageLimits { get; set; } = new() { MinDimension = 150, MaxDimension = 10_000 };
 
     public ImageLimits PanImageLimits { get; set; } = new() { MinDimension = 150, MaxDimension = 10_000 };
+
+    public ImageLimits AadhaarImageLimits { get; set; } = new() { MinDimension = 150, MaxDimension = 10_000 };
 }
 
 public sealed class ImageLimits

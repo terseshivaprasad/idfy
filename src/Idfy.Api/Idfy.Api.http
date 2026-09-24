@@ -52,4 +52,28 @@ Content-Type: image/jpeg
 < ./pan.jpg
 --boundary--
 
+### Aadhaar extraction (OCR) by URL / Base64 - consent required
+POST {{Idfy.Api_HostAddress}}/api/aadhaar/extract
+Content-Type: application/json
+
+{
+  "document": "https://example.com/aadhaar.jpg",
+  "consent": true
+}
+
+### Aadhaar extraction (OCR) by file upload - consent required
+POST {{Idfy.Api_HostAddress}}/api/aadhaar/extract/upload
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="aadhaar.jpg"
+Content-Type: image/jpeg
+
+< ./aadhaar.jpg
+--boundary
+Content-Disposition: form-data; name="consent"
+
+true
+--boundary--
+
 ###

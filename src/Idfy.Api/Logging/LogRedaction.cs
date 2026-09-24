@@ -19,6 +19,15 @@ public static class LogRedaction
         ["name_on_card"] = _ => Redacted,
         ["fathers_name"] = _ => Redacted,
         ["date_of_birth"] = _ => Redacted,
+        // Aadhaar output (also present under qr_output; matched at any depth).
+        ["address"] = _ => Redacted,
+        ["street_address"] = _ => Redacted,
+        ["house_number"] = _ => Redacted,
+        ["district"] = _ => Redacted,
+        ["state"] = _ => Redacted,
+        ["pincode"] = _ => Redacted,
+        ["gender"] = _ => Redacted,
+        ["year_of_birth"] = _ => Redacted,
     };
 
     /// <summary>
