@@ -4,9 +4,7 @@ using Idfy.Api.Data;
 using Idfy.Api.Endpoints;
 using Idfy.Api.Logging;
 using Idfy.Api.Options;
-using Idfy.Api.Security;
 using Idfy.Api.Services;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.Options;
@@ -64,21 +62,23 @@ builder.Services.AddHttpClient<IIdfyClient, IdfyClient>((sp, http) =>
     o.Retry.ShouldHandle = _ => ValueTask.FromResult(false);
 });
 
-// API-key authentication: callers must send a valid key; every endpoint requires it
-// (fallback policy) except health and, in Development, the OpenAPI document.
-builder.Services.AddOptions<ApiKeyOptions>()
-    .Bind(builder.Configuration.GetSection(ApiKeyOptions.SectionName))
-    .Validate(o => o.Keys.Count > 0, "At least one ApiAuth:Keys value must be configured.")
-    .ValidateOnStart();
+// CORS for browser callers. Origins are configured (Cors:AllowedOrigins); a single "*"
+// entry allows any origin. With no origins configured, cross-origin browser calls are blocked.
+builder.Services.AddOptions<CorsOptions>()
+    .Bind(builder.Configuration.GetSection(CorsOptions.SectionName));
 
-builder.Services.AddSingleton<ApiKeyValidator>();
-builder.Services.AddAuthentication(ApiKeyAuthenticationHandler.SchemeName)
-    .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(ApiKeyAuthenticationHandler.SchemeName, null);
+builder.Services.AddCors(o => o.AddPolicy(CorsOptions.PolicyName, policy =>
+{
+    var origins = builder.Configuration.GetSection(CorsOptions.SectionName)
+        .GetSection(nameof(CorsOptions.AllowedOrigins)).Get<string[]>() ?? [];
 
-builder.Services.AddAuthorizationBuilder()
-    .SetFallbackPolicy(new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
-        .RequireAuthenticatedUser()
-        .Build());
+    if (origins is ["*"])
+        policy.AllowAnyOrigin();
+    else
+        policy.WithOrigins(origins);
+
+    policy.AllowAnyHeader().AllowAnyMethod();
+}));
 
 builder.Services.AddOptions<RateLimitOptions>()
     .Bind(builder.Configuration.GetSection(RateLimitOptions.SectionName));
@@ -87,14 +87,11 @@ builder.Services.AddRateLimiter(limiter =>
 {
     limiter.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
-    // One fixed window per caller (by API key, falling back to remote IP).
+    // One fixed window per caller (by remote IP).
     limiter.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
     {
         var config = context.RequestServices.GetRequiredService<IOptions<RateLimitOptions>>().Value;
-        var apiKeyHeader = context.RequestServices.GetRequiredService<IOptions<ApiKeyOptions>>().Value.HeaderName;
-        var partition = context.Request.Headers[apiKeyHeader].FirstOrDefault()
-                        ?? context.Connection.RemoteIpAddress?.ToString()
-                        ?? "unknown";
+        var partition = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
         return RateLimitPartition.GetFixedWindowLimiter(partition, _ => new FixedWindowRateLimiterOptions
         {
@@ -147,17 +144,16 @@ app.UseExceptionHandler();
 app.UseStatusCodePages();
 
 app.UseRateLimiter();
-app.UseAuthentication();
-app.UseAuthorization();
+app.UseCors(CorsOptions.PolicyName);
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi().AllowAnonymous();
+    app.MapOpenApi();
 }
 
 app.UseHttpsRedirection();
 
-app.MapHealthChecks("/health").AllowAnonymous();
+app.MapHealthChecks("/health");
 
 app.MapDocumentEndpoints();
 app.MapPanEndpoints();

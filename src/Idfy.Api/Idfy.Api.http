@@ -1,13 +1,9 @@
 @Idfy.Api_HostAddress = http://localhost:5142
-@apiKey = your-api-key
-
-# All endpoints below require the x-api-key header (add it in each request or via a shared header).
 
 ### Validate by URL / Base64
 # docType (optional): ind_pan | ind_aadhaar | ind_voter_id | ind_driving_license | ind_passport
 # Detect* flags need their key names set under Idfy:AdvancedFeatureKeys.
 POST {{Idfy.Api_HostAddress}}/api/documents/validate
-x-api-key: {{apiKey}}
 Content-Type: application/json
 
 {
@@ -20,7 +16,6 @@ Content-Type: application/json
 
 ### Validate by file upload
 POST {{Idfy.Api_HostAddress}}/api/documents/validate/upload
-x-api-key: {{apiKey}}
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
@@ -40,7 +35,6 @@ true
 
 ### PAN extraction (OCR) by URL / Base64
 POST {{Idfy.Api_HostAddress}}/api/pan/extract
-x-api-key: {{apiKey}}
 Content-Type: application/json
 
 {
@@ -49,7 +43,6 @@ Content-Type: application/json
 
 ### PAN extraction (OCR) by file upload
 POST {{Idfy.Api_HostAddress}}/api/pan/extract/upload
-x-api-key: {{apiKey}}
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
@@ -61,7 +54,6 @@ Content-Type: image/jpeg
 
 ### Aadhaar extraction (OCR) by URL / Base64 - consent required
 POST {{Idfy.Api_HostAddress}}/api/aadhaar/extract
-x-api-key: {{apiKey}}
 Content-Type: application/json
 
 {
@@ -71,7 +63,6 @@ Content-Type: application/json
 
 ### Aadhaar extraction (OCR) by file upload - consent required
 POST {{Idfy.Api_HostAddress}}/api/aadhaar/extract/upload
-x-api-key: {{apiKey}}
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
@@ -87,7 +78,6 @@ true
 
 ### Driving-license extraction (OCR) by URL / Base64
 POST {{Idfy.Api_HostAddress}}/api/driving-license/extract
-x-api-key: {{apiKey}}
 Content-Type: application/json
 
 {
@@ -96,7 +86,6 @@ Content-Type: application/json
 
 ### Driving-license extraction (OCR) by file upload
 POST {{Idfy.Api_HostAddress}}/api/driving-license/extract/upload
-x-api-key: {{apiKey}}
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
@@ -108,7 +97,6 @@ Content-Type: image/jpeg
 
 ### Passport extraction (OCR) by URL / Base64 - document2 (back page) optional
 POST {{Idfy.Api_HostAddress}}/api/passport/extract
-x-api-key: {{apiKey}}
 Content-Type: application/json
 
 {
@@ -118,7 +106,6 @@ Content-Type: application/json
 
 ### Passport extraction (OCR) by file upload - file2 (back page) optional
 POST {{Idfy.Api_HostAddress}}/api/passport/extract/upload
-x-api-key: {{apiKey}}
 Content-Type: multipart/form-data; boundary=boundary
 
 --boundary
@@ -135,7 +122,6 @@ Content-Type: image/jpeg
 
 ### Driving-license verification (async) - submit, returns requestId
 POST {{Idfy.Api_HostAddress}}/api/driving-license/verify
-x-api-key: {{apiKey}}
 Content-Type: application/json
 
 {
@@ -147,11 +133,9 @@ Content-Type: application/json
 
 ### Driving-license verification (async) - poll by requestId (202 while processing)
 GET {{Idfy.Api_HostAddress}}/api/driving-license/verify/a957d82c-987c-4fa9-b69f-6765dc3c1035
-x-api-key: {{apiKey}}
 
 ### Driving-license verification (sync) - result returned directly
 POST {{Idfy.Api_HostAddress}}/api/driving-license/verify/sync
-x-api-key: {{apiKey}}
 Content-Type: application/json
 
 {
@@ -163,7 +147,6 @@ Content-Type: application/json
 
 ### Voter-id verification (async) - submit, returns requestId
 POST {{Idfy.Api_HostAddress}}/api/voter-id/verify
-x-api-key: {{apiKey}}
 Content-Type: application/json
 
 {
@@ -172,11 +155,9 @@ Content-Type: application/json
 
 ### Voter-id verification (async) - poll by requestId (202 while processing)
 GET {{Idfy.Api_HostAddress}}/api/voter-id/verify/a957d82c-987c-4fa9-b69f-6765dc3c1035
-x-api-key: {{apiKey}}
 
 ### Voter-id verification (sync) - result returned directly
 POST {{Idfy.Api_HostAddress}}/api/voter-id/verify/sync
-x-api-key: {{apiKey}}
 Content-Type: application/json
 
 {
@@ -185,7 +166,6 @@ Content-Type: application/json
 
 ### Passport verification (sync) - result returned directly
 POST {{Idfy.Api_HostAddress}}/api/passport/verify/sync
-x-api-key: {{apiKey}}
 Content-Type: application/json
 
 {
@@ -195,7 +175,6 @@ Content-Type: application/json
 
 ### Passport verification (async) - submit, returns requestId
 POST {{Idfy.Api_HostAddress}}/api/passport/verify
-x-api-key: {{apiKey}}
 Content-Type: application/json
 
 {
@@ -205,11 +184,9 @@ Content-Type: application/json
 
 ### Passport verification (async) - poll by requestId (202 while processing)
 GET {{Idfy.Api_HostAddress}}/api/passport/verify/a957d82c-987c-4fa9-b69f-6765dc3c1035
-x-api-key: {{apiKey}}
 
 ### PAN-Aadhaar link (sync) - result returned directly
 POST {{Idfy.Api_HostAddress}}/api/pan-aadhaar-link/verify/sync
-x-api-key: {{apiKey}}
 Content-Type: application/json
 
 {
@@ -219,7 +196,6 @@ Content-Type: application/json
 
 ### PAN-Aadhaar link (async) - submit, returns requestId
 POST {{Idfy.Api_HostAddress}}/api/pan-aadhaar-link/verify
-x-api-key: {{apiKey}}
 Content-Type: application/json
 
 {
@@ -229,11 +205,9 @@ Content-Type: application/json
 
 ### PAN-Aadhaar link (async) - poll by requestId (202 while processing)
 GET {{Idfy.Api_HostAddress}}/api/pan-aadhaar-link/verify/a957d82c-987c-4fa9-b69f-6765dc3c1035
-x-api-key: {{apiKey}}
 
 ### Aadhaar masking (sync) - masks the Aadhaar number in the image, returns URLs
 POST {{Idfy.Api_HostAddress}}/api/aadhaar/mask
-x-api-key: {{apiKey}}
 Content-Type: application/json
 
 {
@@ -243,7 +217,6 @@ Content-Type: application/json
 
 ### Face compare (sync) - two images, returns match result
 POST {{Idfy.Api_HostAddress}}/api/face/compare
-x-api-key: {{apiKey}}
 Content-Type: application/json
 
 {

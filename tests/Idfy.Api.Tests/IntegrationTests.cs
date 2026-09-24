@@ -151,7 +151,6 @@ public sealed class FakeIdfyClient : IIdfyClient
 
 public sealed class IntegrationTests : IClassFixture<IntegrationTests.Factory>
 {
-    public const string ApiKey = "test-key";
     private readonly Factory _factory;
 
     public IntegrationTests(Factory factory) => _factory = factory;
@@ -162,7 +161,6 @@ public sealed class IntegrationTests : IClassFixture<IntegrationTests.Factory>
 
         protected override void ConfigureWebHost(Microsoft.AspNetCore.Hosting.IWebHostBuilder builder)
         {
-            builder.UseSetting("ApiAuth:Keys:0", ApiKey);
             builder.UseSetting("ConnectionStrings:LogDb", "Server=unused;Database=x;");
             builder.UseSetting("Idfy:AccountId", "acc");
             builder.UseSetting("Idfy:ApiKey", "key");
@@ -175,27 +173,7 @@ public sealed class IntegrationTests : IClassFixture<IntegrationTests.Factory>
         }
     }
 
-    private HttpClient Client(bool withKey = true)
-    {
-        var c = _factory.CreateClient();
-        if (withKey) c.DefaultRequestHeaders.Add("x-api-key", ApiKey);
-        return c;
-    }
-
-    [Fact]
-    public async Task Rejects_missing_api_key()
-    {
-        var resp = await Client(withKey: false).PostAsJsonAsync("/api/pan/extract", new { document = "https://x/p.jpg" });
-        Assert.Equal(HttpStatusCode.Unauthorized, resp.StatusCode);
-    }
-
-    [Fact]
-    public async Task Health_is_anonymous()
-    {
-        // No DB, so it reports Unhealthy (503) - but it must be reachable without a key, not 401.
-        var resp = await Client(withKey: false).GetAsync("/health");
-        Assert.NotEqual(HttpStatusCode.Unauthorized, resp.StatusCode);
-    }
+    private HttpClient Client() => _factory.CreateClient();
 
     [Fact]
     public async Task Valid_pan_request_succeeds()

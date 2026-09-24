@@ -1,7 +1,6 @@
 using System.Net;
 using System.Text.Json;
 using Idfy.Api.Models;
-using Idfy.Api.Security;
 using Idfy.Api.Services;
 
 namespace Idfy.Api.Tests;
@@ -86,29 +85,6 @@ public class IdfyApiExceptionTests
         var body = code is null ? "{}" : $$"""{"error":"{{code}}"}""";
         var ex = new IdfyApiException((HttpStatusCode)status, body);
         Assert.Equal(expectedCallerError, ex.IsCallerError);
-    }
-}
-
-public class ApiKeyValidatorTests
-{
-    private static ApiKeyValidator Validator(params string[] keys) =>
-        new(Microsoft.Extensions.Options.Options.Create(new ApiKeyOptions { Keys = [.. keys] }));
-
-    [Fact]
-    public void Accepts_a_configured_key()
-    {
-        Assert.True(Validator("secret-key", "other-key").IsValid("secret-key"));
-        Assert.True(Validator("secret-key", "other-key").IsValid("other-key"));
-    }
-
-    [Theory]
-    [InlineData("wrong-key")]
-    [InlineData("secret-kez")]
-    [InlineData("")]
-    [InlineData(null)]
-    public void Rejects_unknown_or_empty_key(string? key)
-    {
-        Assert.False(Validator("secret-key").IsValid(key));
     }
 }
 

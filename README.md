@@ -7,8 +7,9 @@ extracted PII redacted.
 
 ## Endpoints
 
-All endpoints require the `x-api-key` header (see [Authentication](#authentication)).
-`GET /health` and, in Development, `GET /openapi/v1.json` are anonymous.
+The API is unauthenticated — it is intended for internal use behind the network
+perimeter. Browser access is governed by [CORS](#cors). `GET /openapi/v1.json`
+is served in Development only.
 
 ### Document validation
 
@@ -94,11 +95,13 @@ processing, `200` once complete).
 See [`src/Idfy.Api/Idfy.Api.http`](src/Idfy.Api/Idfy.Api.http) for runnable
 examples of every endpoint.
 
-## Authentication
+## CORS
 
-Send a configured key in the `x-api-key` header. Keys are matched against
-SHA-256 hashes computed at startup; the app refuses to start with no keys
-configured. Per-caller rate limiting returns `429` on breach.
+Cross-origin browser requests are allowed only from the origins listed in
+`Cors:AllowedOrigins`. List exact origins (e.g. `https://app.internal`), or a
+single `"*"` entry to allow any origin. When the list is empty, cross-origin
+browser calls are blocked. Any header and method are allowed. Per-caller (by IP)
+rate limiting returns `429` on breach.
 
 ## Error handling
 
@@ -135,27 +138,22 @@ Configured via `appsettings.json`, environment variables or user-secrets:
 | `Idfy:*ImageLimits` | Per-task resolution limits. |
 | `Idfy:AdvancedFeatureKeys` | Validate feature key names (from the IDfy SPOC). |
 | `ConnectionStrings:LogDb` | SQL Server connection string for the log tables. |
-| `ApiAuth:Keys` | Accepted `x-api-key` values (at least one required). |
+| `Cors:AllowedOrigins` | Browser origins allowed to call the API (`"*"` for any). |
 | `RateLimit`, `LogRetention` | Rate-limit and retention settings. |
 
 ### Secrets
 
-The three secrets — `ApiAuth:Keys`, `Idfy:ApiKey` and `ConnectionStrings:LogDb`
-— must **never** be committed. `appsettings.json` ships with empty placeholders
-and the app fails to start if `ApiAuth:Keys` is empty (fail-closed).
+The two secrets — `Idfy:ApiKey` and `ConnectionStrings:LogDb` — must **never**
+be committed. `appsettings.json` ships with empty placeholders.
 
 Provide them per environment as **environment variables** (config keys map with
 `__` for nesting):
 
 ```
-ApiAuth__Keys__0=<generated-key>      # one entry per internal caller (…__1, …__2)
 Idfy__AccountId=<account-id>
 Idfy__ApiKey=<idfy-api-key>
 ConnectionStrings__LogDb=<sql-connection-string>
 ```
-
-Generate an `x-api-key` value with `openssl rand -base64 32`. Rotate/revoke by
-changing the value and restarting.
 
 **On IIS**, set these on the app pool (*Advanced Settings → Environment
 Variables*) or in the server's `web.config` (which stays on the server, not in
@@ -164,7 +162,6 @@ the repo):
 ```xml
 <aspNetCore ...>
   <environmentVariables>
-    <environmentVariable name="ApiAuth__Keys__0" value="<generated-key>" />
     <environmentVariable name="Idfy__ApiKey" value="<idfy-api-key>" />
     <environmentVariable name="ConnectionStrings__LogDb" value="<sql-connection-string>" />
   </environmentVariables>
@@ -187,7 +184,6 @@ cd src/Idfy.Api
 dotnet user-secrets set "ConnectionStrings:LogDb" "Server=localhost,14333;Database=IdfyLogs;User Id=sa;Password=$MSSQL_SA_PASSWORD;TrustServerCertificate=True"
 dotnet user-secrets set "Idfy:AccountId" "<account-id>"
 dotnet user-secrets set "Idfy:ApiKey" "<api-key>"
-dotnet user-secrets set "ApiAuth:Keys:0" "<a-strong-key>"
 
 # 3. Run and test
 dotnet run
