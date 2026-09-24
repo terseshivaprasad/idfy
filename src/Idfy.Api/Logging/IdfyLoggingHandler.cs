@@ -12,7 +12,9 @@ public sealed class IdfyLoggingHandler(DbLogQueue queue) : DelegatingHandler
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
         var requestBody = request.Content is null ? null : await request.Content.ReadAsStringAsync(ct);
-        var (taskId, groupId, loggedBody) = LogRedaction.RedactRequest(requestBody);
+        // Parse each body at most once, then reuse the node for redaction and metadata.
+        var requestNode = LogRedaction.TryParse(requestBody);
+        var (taskId, groupId, loggedBody) = LogRedaction.RedactRequest(requestNode, requestBody);
 
         var log = new ApiCallLog
         {
@@ -25,7 +27,7 @@ public sealed class IdfyLoggingHandler(DbLogQueue queue) : DelegatingHandler
             RequestBody = loggedBody,
         };
 
-        string? rawResponse = null;
+        System.Text.Json.Nodes.JsonNode? responseNode = null;
         var sw = Stopwatch.StartNew();
         try
         {
@@ -33,8 +35,9 @@ public sealed class IdfyLoggingHandler(DbLogQueue queue) : DelegatingHandler
             // Buffer so the body can be read here and again by the caller.
             await response.Content.LoadIntoBufferAsync(ct);
             log.StatusCode = (int)response.StatusCode;
-            rawResponse = await response.Content.ReadAsStringAsync(ct);
-            log.ResponseBody = LogRedaction.MaskResponse(rawResponse);
+            var rawResponse = await response.Content.ReadAsStringAsync(ct);
+            responseNode = LogRedaction.TryParse(rawResponse);
+            log.ResponseBody = LogRedaction.MaskResponse(responseNode, rawResponse);
             return response;
         }
         catch (Exception ex)
@@ -46,14 +49,15 @@ public sealed class IdfyLoggingHandler(DbLogQueue queue) : DelegatingHandler
         {
             log.DurationMs = sw.ElapsedMilliseconds;
             queue.Enqueue(log);
-            queue.Enqueue(BuildTaskLog(log, requestBody, rawResponse));
+            queue.Enqueue(BuildTaskLog(log, requestNode, responseNode));
         }
     }
 
-    /// <summary>Structured, PII-free row for the IdfyTasks table, parsed from the same envelope.</summary>
-    private static IdfyTaskLog BuildTaskLog(ApiCallLog log, string? requestBody, string? rawResponse)
+    /// <summary>Structured, PII-free row for the IdfyTasks table, from the already-parsed envelope.</summary>
+    private static IdfyTaskLog BuildTaskLog(
+        ApiCallLog log, System.Text.Json.Nodes.JsonNode? requestNode, System.Text.Json.Nodes.JsonNode? responseNode)
     {
-        var meta = IdfyTaskMetadata.Parse(requestBody, rawResponse);
+        var meta = IdfyTaskMetadata.From(requestNode, responseNode);
         return new IdfyTaskLog
         {
             CreatedAt = log.CreatedAt,

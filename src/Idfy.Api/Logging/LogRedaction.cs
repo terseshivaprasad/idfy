@@ -39,50 +39,49 @@ public static class LogRedaction
         ["nationality"] = _ => Redacted,
     };
 
-    /// <summary>
-    /// Pulls out task/group ids and replaces an inline Base64 document with a placeholder:
-    /// it is identity-document PII and can be megabytes. URLs are kept as-is.
-    /// </summary>
-    public static (string? TaskId, string? GroupId, string? Body) RedactRequest(string? body)
+    /// <summary>Parses a body once; returns null for empty or non-JSON content.</summary>
+    public static JsonNode? TryParse(string? body)
     {
         if (string.IsNullOrEmpty(body))
-            return (null, null, body);
-
-        try
-        {
-            if (JsonNode.Parse(body) is not JsonObject root)
-                return (null, null, body);
-
-            if (root["data"]?["document1"] is JsonValue doc && doc.TryGetValue<string>(out var value)
-                && !value.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
-                && !value.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-            {
-                root["data"]!["document1"] = $"[base64 redacted, {value.Length} chars]";
-            }
-
-            return (root["task_id"]?.ToString(), root["group_id"]?.ToString(), root.ToJsonString(WriteOptions));
-        }
-        catch (JsonException)
-        {
-            return (null, null, "[unparseable request body redacted]");
-        }
+            return null;
+        try { return JsonNode.Parse(body); }
+        catch (JsonException) { return null; }
     }
 
-    /// <summary>Masks extracted personal details; non-JSON bodies (e.g. IDfy's HTML 502 page) are kept.</summary>
-    public static string MaskResponse(string body)
+    /// <summary>String entry point (parses); see the JsonNode overload for the work.</summary>
+    public static (string? TaskId, string? GroupId, string? Body) RedactRequest(string? body) =>
+        RedactRequest(TryParse(body), body);
+
+    /// <summary>
+    /// Pulls out task/group ids and replaces an inline Base64 document with a placeholder:
+    /// it is identity-document PII and can be megabytes. URLs are kept as-is. Mutates <paramref name="parsed"/>.
+    /// </summary>
+    public static (string? TaskId, string? GroupId, string? Body) RedactRequest(JsonNode? parsed, string? original)
     {
-        JsonNode? root;
-        try
+        if (string.IsNullOrEmpty(original))
+            return (null, null, original);
+        if (parsed is null)
+            return (null, null, "[unparseable request body redacted]");
+        if (parsed is not JsonObject root)
+            return (null, null, original);
+
+        if (root["data"]?["document1"] is JsonValue doc && doc.TryGetValue<string>(out var value)
+            && !value.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+            && !value.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
         {
-            root = JsonNode.Parse(body);
-        }
-        catch (JsonException)
-        {
-            return body;
+            root["data"]!["document1"] = $"[base64 redacted, {value.Length} chars]";
         }
 
-        return root is not null && Mask(root) ? root.ToJsonString(WriteOptions) : body;
+        return (root["task_id"]?.ToString(), root["group_id"]?.ToString(), root.ToJsonString(WriteOptions));
     }
+
+    /// <summary>String entry point (parses); see the JsonNode overload for the work.</summary>
+    public static string MaskResponse(string body) => MaskResponse(TryParse(body), body);
+
+    /// <summary>Masks extracted personal details; non-JSON bodies (e.g. IDfy's HTML 502 page) are kept.
+    /// Mutates <paramref name="parsed"/>.</summary>
+    public static string MaskResponse(JsonNode? parsed, string original) =>
+        parsed is not null && Mask(parsed) ? parsed.ToJsonString(WriteOptions) : original;
 
     /// <returns>True if anything was masked.</returns>
     private static bool Mask(JsonNode node)
