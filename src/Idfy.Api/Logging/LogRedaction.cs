@@ -47,6 +47,11 @@ public static class LogRedaction
         // Voter-id source_output.
         ["rln_name"] = _ => Redacted,
         ["house_no"] = _ => Redacted,
+        // Passport verify: surname; the request's file number; and passport_status, whose free
+        // text embeds the passport number and a tracking number.
+        ["surname"] = _ => Redacted,
+        ["passport_file_number"] = MaskId,
+        ["passport_status"] = _ => Redacted,
     };
 
     /// <summary>Parses a body once; returns null for empty or non-JSON content.</summary>

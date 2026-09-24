@@ -24,8 +24,23 @@ public static class PassportEndpoints
                 .WithMetadata(new RequestSizeLimitAttribute(MaxUploadBytes))
                 .DisableAntiforgery();
 
+            group.MapPost("/verify/sync", SyncVerify)
+                .WithSummary("Verify a passport against the source synchronously (result returned directly).");
+
             return app;
         }
+    }
+
+    private static Task<Results<Ok<IdfyTaskResponse<PassportSourceResult>>, ProblemHttpResult>> SyncVerify(
+        VerifyPassportRequest request, IIdfyClient idfy, CancellationToken ct)
+    {
+        var (task, group) = NewIds(request.TaskId, request.GroupId);
+        var upstream = new IdfyTaskRequest<IdfyPassportVerifyData>(task, group,
+            new IdfyPassportVerifyData(
+                request.PassportFileNumber,
+                request.DateOfBirth!.Value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)));
+
+        return CallAsync(() => idfy.VerifyPassportAsync(upstream, ct), ct);
     }
 
     private static async Task<Results<Ok<IdfyTaskResponse<PassportResult>>, ProblemHttpResult>> Extract(

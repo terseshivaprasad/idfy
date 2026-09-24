@@ -37,6 +37,10 @@ public interface IIdfyClient
     Task<IdfyTaskResponse<VoterIdSourceResult>> VerifyVoterIdAsync(
         IdfyTaskRequest<IdfyVoterIdVerifyData> request, CancellationToken ct = default);
 
+    /// <summary>Verifies a passport against the source synchronously (result returned directly).</summary>
+    Task<IdfyTaskResponse<PassportSourceResult>> VerifyPassportAsync(
+        IdfyTaskRequest<IdfyPassportVerifyData> request, CancellationToken ct = default);
+
     /// <summary>Submits async voter-id verification; returns the request_id to poll with.</summary>
     Task<IdfyAsyncSubmitResponse> SubmitVoterIdVerificationAsync(
         IdfyTaskRequest<IdfyVoterIdVerifyData> request, CancellationToken ct = default);
@@ -126,6 +130,11 @@ public sealed class IdfyClient(HttpClient http, ILogger<IdfyClient> logger) : II
         IdfyTaskRequest<IdfyVoterIdVerifyData> request, CancellationToken ct = default) =>
         PostAsync<IdfyVoterIdVerifyData, VoterIdSourceResult>(
             "v3/tasks/sync/verify_with_source/ind_voter_id", request, ct);
+
+    public Task<IdfyTaskResponse<PassportSourceResult>> VerifyPassportAsync(
+        IdfyTaskRequest<IdfyPassportVerifyData> request, CancellationToken ct = default) =>
+        PostAsync<IdfyPassportVerifyData, PassportSourceResult>(
+            "v3/tasks/sync/verify_with_source/ind_passport", request, ct);
 
     public Task<IdfyAsyncSubmitResponse> SubmitVoterIdVerificationAsync(
         IdfyTaskRequest<IdfyVoterIdVerifyData> request, CancellationToken ct = default) =>

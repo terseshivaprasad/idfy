@@ -43,6 +43,11 @@ public sealed record IdfyDlVerifyAdvancedDetails(
 public sealed record IdfyVoterIdVerifyData(
     [property: JsonPropertyName("id_number")] string IdNumber);
 
+/// <summary>data for verify_with_source/ind_passport.</summary>
+public sealed record IdfyPassportVerifyData(
+    [property: JsonPropertyName("passport_file_number")] string PassportFileNumber,
+    [property: JsonPropertyName("date_of_birth")] string DateOfBirth);
+
 /// <summary>Response to an async task submission: only a request_id to poll with.</summary>
 public sealed record IdfyAsyncSubmitResponse
 {
@@ -182,6 +187,22 @@ public sealed record CovDetail
     [JsonPropertyName("category")] public string? Category { get; init; }
     [JsonPropertyName("cov")] public string? Cov { get; init; }
     [JsonPropertyName("issue_date")] public string? IssueDate { get; init; }
+}
+
+public sealed record PassportSourceResult
+{
+    [JsonPropertyName("source_output")] public PassportSourceOutput? SourceOutput { get; init; }
+}
+
+public sealed record PassportSourceOutput
+{
+    [JsonPropertyName("application_date")] public string? ApplicationDate { get; init; }
+    [JsonPropertyName("date_of_birth")] public string? DateOfBirth { get; init; }
+    [JsonPropertyName("file_number")] public string? FileNumber { get; init; }
+    [JsonPropertyName("name")] public string? Name { get; init; }
+    [JsonPropertyName("passport_status")] public string? PassportStatus { get; init; }
+    [JsonPropertyName("status")] public string? Status { get; init; }
+    [JsonPropertyName("surname")] public string? Surname { get; init; }
 }
 
 public sealed record VoterIdSourceResult

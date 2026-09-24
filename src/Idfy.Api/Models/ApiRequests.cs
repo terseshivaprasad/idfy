@@ -102,6 +102,23 @@ public sealed class VerifyDrivingLicenseRequest
     public Guid? GroupId { get; set; }
 }
 
+/// <summary>Request for sync passport verification against the source.</summary>
+public sealed class VerifyPassportRequest
+{
+    /// <summary>Passport file number.</summary>
+    [Required]
+    [StringLength(32, MinimumLength = 5)]
+    public string PassportFileNumber { get; set; } = string.Empty;
+
+    /// <summary>Holder's date of birth (YYYY-MM-DD).</summary>
+    [Required]
+    public DateOnly? DateOfBirth { get; set; }
+
+    public Guid? TaskId { get; set; }
+
+    public Guid? GroupId { get; set; }
+}
+
 /// <summary>Request for async voter-id verification against the source.</summary>
 public sealed class VerifyVoterIdRequest
 {

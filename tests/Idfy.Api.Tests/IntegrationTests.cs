@@ -64,6 +64,15 @@ public sealed class FakeIdfyClient : IIdfyClient
             ? new IdfyTaskResponse<DrivingLicenseSourceResult> { Status = "completed", Type = "ind_driving_license" }
             : null));
 
+    public IdfyPassportVerifyData? LastPassportVerifyData { get; private set; }
+
+    public Task<IdfyTaskResponse<PassportSourceResult>> VerifyPassportAsync(
+        IdfyTaskRequest<IdfyPassportVerifyData> r, CancellationToken ct = default)
+    {
+        LastPassportVerifyData = r.Data;
+        return Task.FromResult(Result(new IdfyTaskResponse<PassportSourceResult> { Status = "completed", Type = "ind_passport" }));
+    }
+
     public IdfyVoterIdVerifyData? LastVoterData { get; private set; }
 
     public Task<IdfyTaskResponse<VoterIdSourceResult>> VerifyVoterIdAsync(
@@ -316,6 +325,25 @@ public sealed class IntegrationTests : IClassFixture<IntegrationTests.Factory>
             Assert.Equal(HttpStatusCode.Accepted, resp.StatusCode);
         }
         finally { _factory.Idfy.VerifyResultReady = true; }
+    }
+
+    [Fact]
+    public async Task Passport_verify_sync_returns_result_directly()
+    {
+        var resp = await Client().PostAsJsonAsync("/api/passport/verify/sync",
+            new { passportFileNumber = "AB1234567890", dateOfBirth = "1985-02-15" });
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        Assert.Equal("1985-02-15", _factory.Idfy.LastPassportVerifyData!.DateOfBirth);
+    }
+
+    [Theory]
+    [InlineData("""{"passportFileNumber":"AB1234567890"}""")]         // missing dob
+    [InlineData("""{"passportFileNumber":"AB1234567890","dateOfBirth":"bad"}""")] // bad dob
+    [InlineData("""{"passportFileNumber":"AB","dateOfBirth":"1985-02-15"}""")] // file number too short
+    public async Task Passport_verify_validates_input(string body)
+    {
+        var resp = await Client().PostAsync("/api/passport/verify/sync", Json(body));
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
     }
 
     [Fact]

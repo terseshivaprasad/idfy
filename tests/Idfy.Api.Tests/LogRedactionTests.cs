@@ -140,6 +140,26 @@ public class LogRedactionTests
     }
 
     [Fact]
+    public void MaskResponse_redacts_passport_status_free_text()
+    {
+        var body = """
+            {"type":"ind_passport","result":{"source_output":{
+              "name":"John","surname":"Doe","file_number":"xyz","application_date":"2012-01-01",
+              "passport_status":"Passport K1234567 dispatched, Tracking EN12345654321N.","status":"id_found"}}}
+            """;
+
+        var masked = LogRedaction.MaskResponse(body);
+
+        Assert.Equal("[redacted]", Field(masked, "result", "source_output", "name"));
+        Assert.Equal("[redacted]", Field(masked, "result", "source_output", "surname"));
+        // The free-text status embeds the passport & tracking number, so the whole field goes.
+        Assert.Equal("[redacted]", Field(masked, "result", "source_output", "passport_status"));
+        Assert.DoesNotContain("K1234567", masked);
+        Assert.Equal("id_found", Field(masked, "result", "source_output", "status"));
+        Assert.Equal("2012-01-01", Field(masked, "result", "source_output", "application_date"));
+    }
+
+    [Fact]
     public void RedactRequest_keeps_url_documents()
     {
         var body = """{"task_id":"t1","group_id":"g1","data":{"document1":"https://example.com/x.jpg"}}""";
