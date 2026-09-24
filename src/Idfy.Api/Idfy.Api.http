@@ -241,4 +241,14 @@ Content-Type: application/json
   "consent": true
 }
 
+### Face compare (sync) - two images, returns match result
+POST {{Idfy.Api_HostAddress}}/api/face/compare
+x-api-key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "document": "https://example.com/face1.jpg",
+  "document2": "https://example.com/face2.jpg"
+}
+
 ###

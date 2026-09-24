@@ -19,6 +19,11 @@ public sealed record IdfyValidateDocumentData(
 public sealed record IdfyDocumentData(
     [property: JsonPropertyName("document1")] string Document1);
 
+/// <summary>data for POST /v3/tasks/sync/compare/face. Two face images to compare.</summary>
+public sealed record IdfyFaceCompareData(
+    [property: JsonPropertyName("document1")] string Document1,
+    [property: JsonPropertyName("document2")] string Document2);
+
 /// <summary>data for POST /v3/tasks/sync/extract/ind_aadhaar. Consent is "yes".</summary>
 public sealed record IdfyAadhaarData(
     [property: JsonPropertyName("document1")] string Document1,
@@ -102,6 +107,21 @@ public sealed record FaceDetails
 public sealed record Readability
 {
     [JsonPropertyName("confidence")] public int? Confidence { get; init; }
+}
+
+public sealed record FaceCompareResult
+{
+    [JsonPropertyName("image_1")] public FaceImageQuality? Image1 { get; init; }
+    [JsonPropertyName("image_2")] public FaceImageQuality? Image2 { get; init; }
+    [JsonPropertyName("is_a_match")] public bool? IsAMatch { get; init; }
+    [JsonPropertyName("match_score")] public int? MatchScore { get; init; }
+    [JsonPropertyName("review_recommended")] public bool? ReviewRecommended { get; init; }
+}
+
+public sealed record FaceImageQuality
+{
+    [JsonPropertyName("face_detected")] public bool? FaceDetected { get; init; }
+    [JsonPropertyName("face_quality")] public string? FaceQuality { get; init; }
 }
 
 public sealed record MaskResult

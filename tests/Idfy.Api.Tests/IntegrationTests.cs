@@ -39,6 +39,15 @@ public sealed class FakeIdfyClient : IIdfyClient
         return Task.FromResult(Result(new IdfyTaskResponse<MaskResult> { Status = "completed", Type = "ind_aadhaar" }));
     }
 
+    public IdfyFaceCompareData? LastFaceData { get; private set; }
+
+    public Task<IdfyTaskResponse<FaceCompareResult>> CompareFacesAsync(
+        IdfyTaskRequest<IdfyFaceCompareData> r, CancellationToken ct = default)
+    {
+        LastFaceData = r.Data;
+        return Task.FromResult(Result(new IdfyTaskResponse<FaceCompareResult> { Status = "completed", Type = "face" }));
+    }
+
     public Task<IdfyTaskResponse<DrivingLicenseResult>> ExtractDrivingLicenseAsync(
         IdfyTaskRequest<IdfyDocumentData> r, CancellationToken ct = default) =>
         Task.FromResult(Result(new IdfyTaskResponse<DrivingLicenseResult> { Status = "completed", Type = "ind_driving_license" }));
@@ -453,6 +462,25 @@ public sealed class IntegrationTests : IClassFixture<IntegrationTests.Factory>
     public async Task Pan_aadhaar_link_validates_input(string body)
     {
         var resp = await Client().PostAsync("/api/pan-aadhaar-link/verify/sync", Json(body));
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task Face_compare_forwards_both_images()
+    {
+        var resp = await Client().PostAsJsonAsync("/api/face/compare",
+            new { document = "https://x/a.jpg", document2 = "https://x/b.jpg" });
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        Assert.Equal("https://x/a.jpg", _factory.Idfy.LastFaceData!.Document1);
+        Assert.Equal("https://x/b.jpg", _factory.Idfy.LastFaceData!.Document2);
+    }
+
+    [Theory]
+    [InlineData("""{"document":"https://x/a.jpg"}""")]                        // missing document2
+    [InlineData("""{"document":"https://x/a.jpg","document2":"not base64!!"}""")] // bad document2
+    public async Task Face_compare_requires_both_images(string body)
+    {
+        var resp = await Client().PostAsync("/api/face/compare", Json(body));
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
     }
 

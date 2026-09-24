@@ -119,6 +119,22 @@ public sealed class VerifyPassportRequest
     public Guid? GroupId { get; set; }
 }
 
+/// <summary>Request to compare two face images.</summary>
+public sealed class CompareFaceRequest
+{
+    /// <summary>First image: publicly accessible URL, or Base64.</summary>
+    [Required, UrlOrBase64]
+    public string Document { get; set; } = string.Empty;
+
+    /// <summary>Second image: publicly accessible URL, or Base64.</summary>
+    [Required, UrlOrBase64]
+    public string Document2 { get; set; } = string.Empty;
+
+    public Guid? TaskId { get; set; }
+
+    public Guid? GroupId { get; set; }
+}
+
 /// <summary>Request for a PAN-Aadhaar link check.</summary>
 public sealed class PanAadhaarLinkRequest
 {

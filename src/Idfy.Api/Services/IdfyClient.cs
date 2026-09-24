@@ -19,6 +19,10 @@ public interface IIdfyClient
     Task<IdfyTaskResponse<MaskResult>> MaskAadhaarAsync(
         IdfyTaskRequest<IdfyMaskAadhaarData> request, CancellationToken ct = default);
 
+    /// <summary>Compares two face images synchronously (result returned directly).</summary>
+    Task<IdfyTaskResponse<FaceCompareResult>> CompareFacesAsync(
+        IdfyTaskRequest<IdfyFaceCompareData> request, CancellationToken ct = default);
+
     Task<IdfyTaskResponse<DrivingLicenseResult>> ExtractDrivingLicenseAsync(
         IdfyTaskRequest<IdfyDocumentData> request, CancellationToken ct = default);
 
@@ -131,6 +135,10 @@ public sealed class IdfyClient(HttpClient http, ILogger<IdfyClient> logger) : II
     public Task<IdfyTaskResponse<MaskResult>> MaskAadhaarAsync(
         IdfyTaskRequest<IdfyMaskAadhaarData> request, CancellationToken ct = default) =>
         PostAsync<IdfyMaskAadhaarData, MaskResult>("v3/tasks/sync/mask/ind_aadhaar", request, ct);
+
+    public Task<IdfyTaskResponse<FaceCompareResult>> CompareFacesAsync(
+        IdfyTaskRequest<IdfyFaceCompareData> request, CancellationToken ct = default) =>
+        PostAsync<IdfyFaceCompareData, FaceCompareResult>("v3/tasks/sync/compare/face", request, ct);
 
     public Task<IdfyTaskResponse<DrivingLicenseResult>> ExtractDrivingLicenseAsync(
         IdfyTaskRequest<IdfyDocumentData> request, CancellationToken ct = default) =>

@@ -34,6 +34,9 @@ public sealed class IdfyOptions
 
     public ImageLimits MaskImageLimits { get; set; } = new() { MinDimension = 150, MaxDimension = 10_000 };
 
+    /// <summary>Face Match has a lower max resolution than the OCR tasks.</summary>
+    public ImageLimits FaceMatchImageLimits { get; set; } = new() { MinDimension = 150, MaxDimension = 4096 };
+
     public ImageLimits DrivingLicenseImageLimits { get; set; } = new() { MinDimension = 150, MaxDimension = 10_000 };
 
     public ImageLimits PassportImageLimits { get; set; } = new() { MinDimension = 150, MaxDimension = 10_000 };
