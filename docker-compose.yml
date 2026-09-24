@@ -10,7 +10,8 @@ services:
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_PID: Express
-      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-IdfyDev#2026!}
+      # Required: export MSSQL_SA_PASSWORD before `docker compose up` (no default committed).
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?set MSSQL_SA_PASSWORD}
     ports:
       - "14333:1433"
     volumes:
