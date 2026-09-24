@@ -24,15 +24,33 @@ builder.Services.AddHostedService<DbLogWriter>();
 builder.Services.AddTransient<IdfyLoggingHandler>();
 builder.Services.AddExceptionHandler<DbExceptionHandler>();
 
+builder.Services.AddOptions<LogRetentionOptions>()
+    .Bind(builder.Configuration.GetSection(LogRetentionOptions.SectionName));
+builder.Services.AddHostedService<LogRetentionService>();
+
+builder.Services.AddHealthChecks()
+    .AddCheck<LogDbHealthCheck>("logdb");
+
+var idfyTimeout = TimeSpan.FromSeconds(builder.Configuration.GetValue("Idfy:TimeoutSeconds", 60));
+
 builder.Services.AddHttpClient<IIdfyClient, IdfyClient>((sp, http) =>
 {
     var options = sp.GetRequiredService<IOptions<IdfyOptions>>().Value;
     http.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/");
-    http.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+    http.Timeout = Timeout.InfiniteTimeSpan; // the resilience pipeline owns timeouts
     http.DefaultRequestHeaders.Add("account-id", options.AccountId);
     http.DefaultRequestHeaders.Add("api-key", options.ApiKey);
 })
-.AddHttpMessageHandler<IdfyLoggingHandler>();
+.AddHttpMessageHandler<IdfyLoggingHandler>()
+.AddStandardResilienceHandler(o =>
+{
+    // IDfy sync tasks can take up to ~50s, so timeouts are generous.
+    o.AttemptTimeout.Timeout = idfyTimeout;
+    o.TotalRequestTimeout.Timeout = idfyTimeout + TimeSpan.FromSeconds(5);
+    o.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(idfyTimeout.TotalSeconds * 2 + 10);
+    // Never retry: re-POSTing an extraction is not safely idempotent and could double-charge credits.
+    o.Retry.ShouldHandle = _ => ValueTask.FromResult(false);
+});
 
 // API-key authentication: callers must send a valid key; every endpoint requires it
 // (fallback policy) except health and, in Development, the OpenAPI document.
@@ -93,6 +111,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.MapHealthChecks("/health").AllowAnonymous();
 
 app.MapDocumentEndpoints();
 app.MapPanEndpoints();
