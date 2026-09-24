@@ -73,6 +73,19 @@ public sealed class FakeIdfyClient : IIdfyClient
         return Task.FromResult(Result(new IdfyTaskResponse<PassportSourceResult> { Status = "completed", Type = "ind_passport" }));
     }
 
+    public Task<IdfyAsyncSubmitResponse> SubmitPassportVerificationAsync(
+        IdfyTaskRequest<IdfyPassportVerifyData> r, CancellationToken ct = default)
+    {
+        LastPassportVerifyData = r.Data;
+        return Task.FromResult(Result(new IdfyAsyncSubmitResponse { RequestId = "req-passport" }));
+    }
+
+    public Task<IdfyTaskResponse<PassportSourceResult>?> GetPassportVerificationAsync(
+        string requestId, CancellationToken ct = default) =>
+        Task.FromResult(Result(VerifyResultReady
+            ? new IdfyTaskResponse<PassportSourceResult> { Status = "completed", Type = "ind_passport" }
+            : null));
+
     public IdfyVoterIdVerifyData? LastVoterData { get; private set; }
 
     public Task<IdfyTaskResponse<VoterIdSourceResult>> VerifyVoterIdAsync(
@@ -344,6 +357,25 @@ public sealed class IntegrationTests : IClassFixture<IntegrationTests.Factory>
     {
         var resp = await Client().PostAsync("/api/passport/verify/sync", Json(body));
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task Passport_verify_async_submit_and_poll()
+    {
+        var submit = await Client().PostAsJsonAsync("/api/passport/verify",
+            new { passportFileNumber = "AB1234567890", dateOfBirth = "1985-02-15" });
+        Assert.Equal(HttpStatusCode.OK, submit.StatusCode);
+
+        var ready = await Client().GetAsync("/api/passport/verify/req-passport");
+        Assert.Equal(HttpStatusCode.OK, ready.StatusCode);
+
+        _factory.Idfy.VerifyResultReady = false;
+        try
+        {
+            var pending = await Client().GetAsync("/api/passport/verify/req-passport");
+            Assert.Equal(HttpStatusCode.Accepted, pending.StatusCode);
+        }
+        finally { _factory.Idfy.VerifyResultReady = true; }
     }
 
     [Fact]

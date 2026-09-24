@@ -27,20 +27,40 @@ public static class PassportEndpoints
             group.MapPost("/verify/sync", SyncVerify)
                 .WithSummary("Verify a passport against the source synchronously (result returned directly).");
 
+            group.MapPost("/verify", SubmitVerify)
+                .WithSummary("Submit async passport verification against the source; returns a requestId.");
+
+            group.MapGet("/verify/{requestId}", PollVerify)
+                .WithSummary("Poll an async passport verification by requestId. 202 while still processing.");
+
             return app;
         }
     }
 
     private static Task<Results<Ok<IdfyTaskResponse<PassportSourceResult>>, ProblemHttpResult>> SyncVerify(
-        VerifyPassportRequest request, IIdfyClient idfy, CancellationToken ct)
+        VerifyPassportRequest request, IIdfyClient idfy, CancellationToken ct) =>
+        CallAsync(() => idfy.VerifyPassportAsync(BuildVerifyRequest(request), ct), ct);
+
+    private static Task<Results<Ok<IdfyAsyncSubmitResponse>, ProblemHttpResult>> SubmitVerify(
+        VerifyPassportRequest request, IIdfyClient idfy, CancellationToken ct) =>
+        CallAsync(() => idfy.SubmitPassportVerificationAsync(BuildVerifyRequest(request), ct), ct);
+
+    private static Task<IResult> PollVerify(string requestId, IIdfyClient idfy, CancellationToken ct) =>
+        GuardAsync(async () =>
+        {
+            var result = await idfy.GetPassportVerificationAsync(requestId, ct);
+            return result is null
+                ? Results.Accepted(value: new { requestId, status = "processing" })
+                : Results.Ok(result);
+        }, ct);
+
+    private static IdfyTaskRequest<IdfyPassportVerifyData> BuildVerifyRequest(VerifyPassportRequest request)
     {
         var (task, group) = NewIds(request.TaskId, request.GroupId);
-        var upstream = new IdfyTaskRequest<IdfyPassportVerifyData>(task, group,
+        return new IdfyTaskRequest<IdfyPassportVerifyData>(task, group,
             new IdfyPassportVerifyData(
                 request.PassportFileNumber,
                 request.DateOfBirth!.Value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)));
-
-        return CallAsync(() => idfy.VerifyPassportAsync(upstream, ct), ct);
     }
 
     private static async Task<Results<Ok<IdfyTaskResponse<PassportResult>>, ProblemHttpResult>> Extract(

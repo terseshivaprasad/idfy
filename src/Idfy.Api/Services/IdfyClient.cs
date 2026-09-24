@@ -41,6 +41,14 @@ public interface IIdfyClient
     Task<IdfyTaskResponse<PassportSourceResult>> VerifyPassportAsync(
         IdfyTaskRequest<IdfyPassportVerifyData> request, CancellationToken ct = default);
 
+    /// <summary>Submits async passport verification; returns the request_id to poll with.</summary>
+    Task<IdfyAsyncSubmitResponse> SubmitPassportVerificationAsync(
+        IdfyTaskRequest<IdfyPassportVerifyData> request, CancellationToken ct = default);
+
+    /// <summary>Polls an async passport task by request_id. Null means the result is not ready yet.</summary>
+    Task<IdfyTaskResponse<PassportSourceResult>?> GetPassportVerificationAsync(
+        string requestId, CancellationToken ct = default);
+
     /// <summary>Submits async voter-id verification; returns the request_id to poll with.</summary>
     Task<IdfyAsyncSubmitResponse> SubmitVoterIdVerificationAsync(
         IdfyTaskRequest<IdfyVoterIdVerifyData> request, CancellationToken ct = default);
@@ -135,6 +143,14 @@ public sealed class IdfyClient(HttpClient http, ILogger<IdfyClient> logger) : II
         IdfyTaskRequest<IdfyPassportVerifyData> request, CancellationToken ct = default) =>
         PostAsync<IdfyPassportVerifyData, PassportSourceResult>(
             "v3/tasks/sync/verify_with_source/ind_passport", request, ct);
+
+    public Task<IdfyAsyncSubmitResponse> SubmitPassportVerificationAsync(
+        IdfyTaskRequest<IdfyPassportVerifyData> request, CancellationToken ct = default) =>
+        SubmitAsync("v3/tasks/async/verify_with_source/ind_passport", request, ct);
+
+    public Task<IdfyTaskResponse<PassportSourceResult>?> GetPassportVerificationAsync(
+        string requestId, CancellationToken ct = default) =>
+        GetTaskAsync<PassportSourceResult>(requestId, ct);
 
     public Task<IdfyAsyncSubmitResponse> SubmitVoterIdVerificationAsync(
         IdfyTaskRequest<IdfyVoterIdVerifyData> request, CancellationToken ct = default) =>

@@ -193,4 +193,18 @@ Content-Type: application/json
   "dateOfBirth": "1985-02-15"
 }
 
+### Passport verification (async) - submit, returns requestId
+POST {{Idfy.Api_HostAddress}}/api/passport/verify
+x-api-key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "passportFileNumber": "AB1234567890",
+  "dateOfBirth": "1985-02-15"
+}
+
+### Passport verification (async) - poll by requestId (202 while processing)
+GET {{Idfy.Api_HostAddress}}/api/passport/verify/a957d82c-987c-4fa9-b69f-6765dc3c1035
+x-api-key: {{apiKey}}
+
 ###
