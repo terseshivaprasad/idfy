@@ -56,6 +56,18 @@ public interface IIdfyClient
     /// <summary>Polls an async voter-id task by request_id. Null means the result is not ready yet.</summary>
     Task<IdfyTaskResponse<VoterIdSourceResult>?> GetVoterIdVerificationAsync(
         string requestId, CancellationToken ct = default);
+
+    /// <summary>Checks PAN-Aadhaar linkage synchronously (result returned directly).</summary>
+    Task<IdfyTaskResponse<PanAadhaarLinkResult>> VerifyPanAadhaarLinkAsync(
+        IdfyTaskRequest<IdfyPanAadhaarLinkData> request, CancellationToken ct = default);
+
+    /// <summary>Submits async PAN-Aadhaar link check; returns the request_id to poll with.</summary>
+    Task<IdfyAsyncSubmitResponse> SubmitPanAadhaarLinkAsync(
+        IdfyTaskRequest<IdfyPanAadhaarLinkData> request, CancellationToken ct = default);
+
+    /// <summary>Polls an async PAN-Aadhaar link task by request_id. Null means not ready yet.</summary>
+    Task<IdfyTaskResponse<PanAadhaarLinkResult>?> GetPanAadhaarLinkAsync(
+        string requestId, CancellationToken ct = default);
 }
 
 /// <summary>A non-success response from IDfy, with the error fields parsed when the body is JSON.</summary>
@@ -155,6 +167,19 @@ public sealed class IdfyClient(HttpClient http, ILogger<IdfyClient> logger) : II
     public Task<IdfyAsyncSubmitResponse> SubmitVoterIdVerificationAsync(
         IdfyTaskRequest<IdfyVoterIdVerifyData> request, CancellationToken ct = default) =>
         SubmitAsync("v3/tasks/async/verify_with_source/ind_voter_id", request, ct);
+
+    public Task<IdfyTaskResponse<PanAadhaarLinkResult>> VerifyPanAadhaarLinkAsync(
+        IdfyTaskRequest<IdfyPanAadhaarLinkData> request, CancellationToken ct = default) =>
+        PostAsync<IdfyPanAadhaarLinkData, PanAadhaarLinkResult>(
+            "v3/tasks/sync/verify_with_source/pan_aadhaar_link", request, ct);
+
+    public Task<IdfyAsyncSubmitResponse> SubmitPanAadhaarLinkAsync(
+        IdfyTaskRequest<IdfyPanAadhaarLinkData> request, CancellationToken ct = default) =>
+        SubmitAsync("v3/tasks/async/verify_with_source/pan_aadhaar_link", request, ct);
+
+    public Task<IdfyTaskResponse<PanAadhaarLinkResult>?> GetPanAadhaarLinkAsync(
+        string requestId, CancellationToken ct = default) =>
+        GetTaskAsync<PanAadhaarLinkResult>(requestId, ct);
 
     public Task<IdfyTaskResponse<VoterIdSourceResult>?> GetVoterIdVerificationAsync(
         string requestId, CancellationToken ct = default) =>

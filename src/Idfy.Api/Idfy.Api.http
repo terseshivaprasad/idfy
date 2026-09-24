@@ -207,4 +207,28 @@ Content-Type: application/json
 GET {{Idfy.Api_HostAddress}}/api/passport/verify/a957d82c-987c-4fa9-b69f-6765dc3c1035
 x-api-key: {{apiKey}}
 
+### PAN-Aadhaar link (sync) - result returned directly
+POST {{Idfy.Api_HostAddress}}/api/pan-aadhaar-link/verify/sync
+x-api-key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "panNumber": "ABCDE1234F",
+  "aadhaarNumber": "123412341234"
+}
+
+### PAN-Aadhaar link (async) - submit, returns requestId
+POST {{Idfy.Api_HostAddress}}/api/pan-aadhaar-link/verify
+x-api-key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "panNumber": "ABCDE1234F",
+  "aadhaarNumber": "123412341234"
+}
+
+### PAN-Aadhaar link (async) - poll by requestId (202 while processing)
+GET {{Idfy.Api_HostAddress}}/api/pan-aadhaar-link/verify/a957d82c-987c-4fa9-b69f-6765dc3c1035
+x-api-key: {{apiKey}}
+
 ###

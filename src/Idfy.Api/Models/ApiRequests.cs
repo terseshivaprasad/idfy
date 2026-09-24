@@ -119,6 +119,24 @@ public sealed class VerifyPassportRequest
     public Guid? GroupId { get; set; }
 }
 
+/// <summary>Request for a PAN-Aadhaar link check.</summary>
+public sealed class PanAadhaarLinkRequest
+{
+    /// <summary>PAN, e.g. ABCDE1234F.</summary>
+    [Required]
+    [RegularExpression("^[A-Za-z]{5}[0-9]{4}[A-Za-z]$", ErrorMessage = "PanNumber must be a valid PAN (e.g. ABCDE1234F).")]
+    public string PanNumber { get; set; } = string.Empty;
+
+    /// <summary>12-digit Aadhaar number.</summary>
+    [Required]
+    [RegularExpression("^[0-9]{12}$", ErrorMessage = "AadhaarNumber must be 12 digits.")]
+    public string AadhaarNumber { get; set; } = string.Empty;
+
+    public Guid? TaskId { get; set; }
+
+    public Guid? GroupId { get; set; }
+}
+
 /// <summary>Request for async voter-id verification against the source.</summary>
 public sealed class VerifyVoterIdRequest
 {

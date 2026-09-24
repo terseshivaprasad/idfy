@@ -107,6 +107,28 @@ public sealed class FakeIdfyClient : IIdfyClient
         Task.FromResult(Result(VerifyResultReady
             ? new IdfyTaskResponse<VoterIdSourceResult> { Status = "completed", Type = "ind_voter_id" }
             : null));
+
+    public IdfyPanAadhaarLinkData? LastPanAadhaarData { get; private set; }
+
+    public Task<IdfyTaskResponse<PanAadhaarLinkResult>> VerifyPanAadhaarLinkAsync(
+        IdfyTaskRequest<IdfyPanAadhaarLinkData> r, CancellationToken ct = default)
+    {
+        LastPanAadhaarData = r.Data;
+        return Task.FromResult(Result(new IdfyTaskResponse<PanAadhaarLinkResult> { Status = "completed", Type = "pan_aadhaar_link" }));
+    }
+
+    public Task<IdfyAsyncSubmitResponse> SubmitPanAadhaarLinkAsync(
+        IdfyTaskRequest<IdfyPanAadhaarLinkData> r, CancellationToken ct = default)
+    {
+        LastPanAadhaarData = r.Data;
+        return Task.FromResult(Result(new IdfyAsyncSubmitResponse { RequestId = "req-panaadhaar" }));
+    }
+
+    public Task<IdfyTaskResponse<PanAadhaarLinkResult>?> GetPanAadhaarLinkAsync(
+        string requestId, CancellationToken ct = default) =>
+        Task.FromResult(Result(VerifyResultReady
+            ? new IdfyTaskResponse<PanAadhaarLinkResult> { Status = "completed", Type = "pan_aadhaar_link" }
+            : null));
 }
 
 public sealed class IntegrationTests : IClassFixture<IntegrationTests.Factory>
@@ -376,6 +398,35 @@ public sealed class IntegrationTests : IClassFixture<IntegrationTests.Factory>
             Assert.Equal(HttpStatusCode.Accepted, pending.StatusCode);
         }
         finally { _factory.Idfy.VerifyResultReady = true; }
+    }
+
+    [Fact]
+    public async Task Pan_aadhaar_link_sync_returns_result()
+    {
+        var resp = await Client().PostAsJsonAsync("/api/pan-aadhaar-link/verify/sync",
+            new { panNumber = "ABCDE1234F", aadhaarNumber = "123412341234" });
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        Assert.Equal("ABCDE1234F", _factory.Idfy.LastPanAadhaarData!.PanNumber);
+    }
+
+    [Fact]
+    public async Task Pan_aadhaar_link_async_submit_and_poll()
+    {
+        var submit = await Client().PostAsJsonAsync("/api/pan-aadhaar-link/verify",
+            new { panNumber = "ABCDE1234F", aadhaarNumber = "123412341234" });
+        Assert.Equal(HttpStatusCode.OK, submit.StatusCode);
+        var poll = await Client().GetAsync("/api/pan-aadhaar-link/verify/req-panaadhaar");
+        Assert.Equal(HttpStatusCode.OK, poll.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("""{"panNumber":"BADPAN","aadhaarNumber":"123412341234"}""")]  // bad PAN
+    [InlineData("""{"panNumber":"ABCDE1234F","aadhaarNumber":"12345"}""")]      // bad Aadhaar
+    [InlineData("""{"aadhaarNumber":"123412341234"}""")]                        // missing PAN
+    public async Task Pan_aadhaar_link_validates_input(string body)
+    {
+        var resp = await Client().PostAsync("/api/pan-aadhaar-link/verify/sync", Json(body));
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
     }
 
     [Fact]

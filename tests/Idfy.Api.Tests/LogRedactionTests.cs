@@ -160,6 +160,18 @@ public class LogRedactionTests
     }
 
     [Fact]
+    public void RedactRequest_masks_pan_and_aadhaar_numbers()
+    {
+        var body = """{"task_id":"t1","group_id":"g1","data":{"pan_number":"ABCDE1234F","aadhaar_number":"123412341234"}}""";
+
+        var (_, _, redacted) = LogRedaction.RedactRequest(body);
+
+        Assert.DoesNotContain("ABCDE1234F", redacted);
+        Assert.DoesNotContain("123412341234", redacted);
+        Assert.Contains("*", redacted); // both masked, not fully dropped
+    }
+
+    [Fact]
     public void RedactRequest_keeps_url_documents()
     {
         var body = """{"task_id":"t1","group_id":"g1","data":{"document1":"https://example.com/x.jpg"}}""";

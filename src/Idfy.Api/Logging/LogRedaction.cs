@@ -52,6 +52,9 @@ public static class LogRedaction
         ["surname"] = _ => Redacted,
         ["passport_file_number"] = MaskId,
         ["passport_status"] = _ => Redacted,
+        // pan_aadhaar_link request: both numbers are sensitive.
+        ["pan_number"] = MaskId,
+        ["aadhaar_number"] = MaskId,
     };
 
     /// <summary>Parses a body once; returns null for empty or non-JSON content.</summary>

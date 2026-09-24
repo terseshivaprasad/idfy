@@ -48,6 +48,11 @@ public sealed record IdfyPassportVerifyData(
     [property: JsonPropertyName("passport_file_number")] string PassportFileNumber,
     [property: JsonPropertyName("date_of_birth")] string DateOfBirth);
 
+/// <summary>data for verify_with_source/pan_aadhaar_link.</summary>
+public sealed record IdfyPanAadhaarLinkData(
+    [property: JsonPropertyName("pan_number")] string PanNumber,
+    [property: JsonPropertyName("aadhaar_number")] string AadhaarNumber);
+
 /// <summary>Response to an async task submission: only a request_id to poll with.</summary>
 public sealed record IdfyAsyncSubmitResponse
 {
@@ -192,6 +197,18 @@ public sealed record CovDetail
 public sealed record PassportSourceResult
 {
     [JsonPropertyName("source_output")] public PassportSourceOutput? SourceOutput { get; init; }
+}
+
+public sealed record PanAadhaarLinkResult
+{
+    [JsonPropertyName("source_output")] public PanAadhaarLinkOutput? SourceOutput { get; init; }
+}
+
+public sealed record PanAadhaarLinkOutput
+{
+    [JsonPropertyName("is_linked")] public bool? IsLinked { get; init; }
+    [JsonPropertyName("message")] public string? Message { get; init; }
+    [JsonPropertyName("status")] public string? Status { get; init; }
 }
 
 public sealed record PassportSourceOutput
