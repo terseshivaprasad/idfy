@@ -27,8 +27,52 @@ public static class AadhaarEndpoints
                 .WithMetadata(new RequestSizeLimitAttribute(MaxUploadBytes))
                 .DisableAntiforgery();
 
+            group.MapPost("/mask", Mask)
+                .WithSummary("Mask the Aadhaar number in a document image (URL/Base64). Requires consent.");
+
+            group.MapPost("/mask/upload", MaskUpload)
+                .WithSummary("Mask the Aadhaar number in an uploaded image file. Requires consent.")
+                .WithMetadata(new RequestSizeLimitAttribute(MaxUploadBytes))
+                .DisableAntiforgery();
+
             return app;
         }
+    }
+
+    private static async Task<Results<Ok<IdfyTaskResponse<MaskResult>>, ProblemHttpResult>> Mask(
+        MaskAadhaarRequest request, IIdfyClient idfy, IOptions<IdfyOptions> options, CancellationToken ct)
+    {
+        if (CheckDocument(request.Document, options.Value.MaskImageLimits, options.Value) is { } problem)
+            return problem;
+
+        return await SendMaskAsync(idfy, request.Document, request.AdvancedFeatures, request.TaskId, request.GroupId, ct);
+    }
+
+    private static async Task<Results<Ok<IdfyTaskResponse<MaskResult>>, ProblemHttpResult>> MaskUpload(
+        [FromForm] AadhaarUploadForm form, IIdfyClient idfy, IOptions<IdfyOptions> options, CancellationToken ct)
+    {
+        if (form.Consent != true)
+            return TypedResults.Problem("Consent must be given (consent=true) to process an Aadhaar document.",
+                statusCode: StatusCodes.Status400BadRequest);
+
+        var (base64, problem) = await ReadUploadAsync(form.File, options.Value.MaskImageLimits, options.Value, ct);
+        if (problem is not null)
+            return problem;
+
+        return await SendMaskAsync(idfy, base64!, null, null, null, ct);
+    }
+
+    private static Task<Results<Ok<IdfyTaskResponse<MaskResult>>, ProblemHttpResult>> SendMaskAsync(
+        IIdfyClient idfy, string document, Dictionary<string, bool>? advancedFeatures, Guid? taskId, Guid? groupId, CancellationToken ct)
+    {
+        var (task, group) = NewIds(taskId, groupId);
+        var data = new IdfyMaskAadhaarData(document, Consent)
+        {
+            AdvancedFeatures = advancedFeatures is { Count: > 0 }
+                ? advancedFeatures.ToDictionary(kv => kv.Key, kv => (object?)kv.Value)
+                : null,
+        };
+        return CallAsync(() => idfy.MaskAadhaarAsync(new IdfyTaskRequest<IdfyMaskAadhaarData>(task, group, data), ct), ct);
     }
 
     private static async Task<Results<Ok<IdfyTaskResponse<AadhaarExtractionResult>>, ProblemHttpResult>> Extract(

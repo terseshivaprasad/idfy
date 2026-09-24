@@ -15,6 +15,10 @@ public interface IIdfyClient
     Task<IdfyTaskResponse<AadhaarExtractionResult>> ExtractAadhaarAsync(
         IdfyTaskRequest<IdfyAadhaarData> request, CancellationToken ct = default);
 
+    /// <summary>Masks the Aadhaar number in the document image; returns URLs to the masked/original images.</summary>
+    Task<IdfyTaskResponse<MaskResult>> MaskAadhaarAsync(
+        IdfyTaskRequest<IdfyMaskAadhaarData> request, CancellationToken ct = default);
+
     Task<IdfyTaskResponse<DrivingLicenseResult>> ExtractDrivingLicenseAsync(
         IdfyTaskRequest<IdfyDocumentData> request, CancellationToken ct = default);
 
@@ -123,6 +127,10 @@ public sealed class IdfyClient(HttpClient http, ILogger<IdfyClient> logger) : II
     public Task<IdfyTaskResponse<AadhaarExtractionResult>> ExtractAadhaarAsync(
         IdfyTaskRequest<IdfyAadhaarData> request, CancellationToken ct = default) =>
         PostAsync<IdfyAadhaarData, AadhaarExtractionResult>("v3/tasks/sync/extract/ind_aadhaar", request, ct);
+
+    public Task<IdfyTaskResponse<MaskResult>> MaskAadhaarAsync(
+        IdfyTaskRequest<IdfyMaskAadhaarData> request, CancellationToken ct = default) =>
+        PostAsync<IdfyMaskAadhaarData, MaskResult>("v3/tasks/sync/mask/ind_aadhaar", request, ct);
 
     public Task<IdfyTaskResponse<DrivingLicenseResult>> ExtractDrivingLicenseAsync(
         IdfyTaskRequest<IdfyDocumentData> request, CancellationToken ct = default) =>

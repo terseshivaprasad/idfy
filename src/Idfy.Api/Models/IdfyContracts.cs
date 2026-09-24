@@ -24,6 +24,18 @@ public sealed record IdfyAadhaarData(
     [property: JsonPropertyName("document1")] string Document1,
     [property: JsonPropertyName("consent")] string Consent);
 
+/// <summary>
+/// data for POST /v3/tasks/sync/mask/ind_aadhaar. The masking option flags sit at the data level
+/// (their exact key names are provided by the IDfy SPOC), so they go through JsonExtensionData.
+/// </summary>
+public sealed record IdfyMaskAadhaarData(
+    [property: JsonPropertyName("document1")] string Document1,
+    [property: JsonPropertyName("consent")] string Consent)
+{
+    [JsonExtensionData]
+    public IDictionary<string, object?>? AdvancedFeatures { get; init; }
+}
+
 /// <summary>data for POST /v3/tasks/sync/extract/ind_passport. document2 (back page) is optional.</summary>
 public sealed record IdfyPassportData(
     [property: JsonPropertyName("document1")] string Document1,
@@ -90,6 +102,16 @@ public sealed record FaceDetails
 public sealed record Readability
 {
     [JsonPropertyName("confidence")] public int? Confidence { get; init; }
+}
+
+public sealed record MaskResult
+{
+    /// <summary>Signed URL to the masked document image.</summary>
+    [JsonPropertyName("document_url")] public string? DocumentUrl { get; init; }
+    [JsonPropertyName("id_number_found")] public bool? IdNumberFound { get; init; }
+    /// <summary>Signed URL to the original (unmasked) document image.</summary>
+    [JsonPropertyName("original_document_url")] public string? OriginalDocumentUrl { get; init; }
+    [JsonPropertyName("self_link")] public string? SelfLink { get; init; }
 }
 
 public sealed record PanExtractionResult

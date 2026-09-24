@@ -55,6 +55,9 @@ public static class LogRedaction
         // pan_aadhaar_link request: both numbers are sensitive.
         ["pan_number"] = MaskId,
         ["aadhaar_number"] = MaskId,
+        // Aadhaar masking result: signed URLs point at the (masked and original) document images.
+        ["document_url"] = _ => Redacted,
+        ["original_document_url"] = _ => Redacted,
     };
 
     /// <summary>Parses a body once; returns null for empty or non-JSON content.</summary>

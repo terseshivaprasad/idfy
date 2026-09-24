@@ -150,6 +150,26 @@ public sealed class VerifyVoterIdRequest
     public Guid? GroupId { get; set; }
 }
 
+/// <summary>Request for Aadhaar masking. Consent is mandatory (UIDAI/DPDP).</summary>
+public sealed class MaskAadhaarRequest
+{
+    /// <summary>Publicly accessible image URL, or the image as Base64.</summary>
+    [Required, UrlOrBase64]
+    public string Document { get; set; } = string.Empty;
+
+    /// <summary>Must be true: the Aadhaar holder has consented. Sent to IDfy as "yes".</summary>
+    [Required(ErrorMessage = "Consent is required to process an Aadhaar document.")]
+    [Range(typeof(bool), "true", "true", ErrorMessage = "Consent must be given (true) to process an Aadhaar document.")]
+    public bool? Consent { get; set; }
+
+    /// <summary>Optional masking flags, forwarded as-is (exact key names from the IDfy SPOC).</summary>
+    public Dictionary<string, bool>? AdvancedFeatures { get; set; }
+
+    public Guid? TaskId { get; set; }
+
+    public Guid? GroupId { get; set; }
+}
+
 /// <summary>Request for Aadhaar extraction. Consent is mandatory (UIDAI/DPDP).</summary>
 public sealed class ExtractAadhaarRequest
 {

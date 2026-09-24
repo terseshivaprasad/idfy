@@ -172,6 +172,23 @@ public class LogRedactionTests
     }
 
     [Fact]
+    public void MaskResponse_redacts_document_urls()
+    {
+        var body = """
+            {"type":"ind_aadhaar","result":{
+              "document_url":"https://storage/masked.jpg?sig=abc",
+              "original_document_url":"https://storage/original.jpg?sig=xyz",
+              "id_number_found":true,"self_link":""}}
+            """;
+
+        var masked = LogRedaction.MaskResponse(body);
+
+        Assert.Equal("[redacted]", Field(masked, "result", "document_url"));
+        Assert.Equal("[redacted]", Field(masked, "result", "original_document_url"));
+        Assert.DoesNotContain("storage/original.jpg", masked);
+    }
+
+    [Fact]
     public void RedactRequest_keeps_url_documents()
     {
         var body = """{"task_id":"t1","group_id":"g1","data":{"document1":"https://example.com/x.jpg"}}""";

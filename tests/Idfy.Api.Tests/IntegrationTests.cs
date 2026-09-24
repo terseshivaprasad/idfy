@@ -30,6 +30,15 @@ public sealed class FakeIdfyClient : IIdfyClient
         IdfyTaskRequest<IdfyAadhaarData> r, CancellationToken ct = default) =>
         Task.FromResult(Result(new IdfyTaskResponse<AadhaarExtractionResult> { Status = "completed", Type = "ind_aadhaar" }));
 
+    public IdfyMaskAadhaarData? LastMaskData { get; private set; }
+
+    public Task<IdfyTaskResponse<MaskResult>> MaskAadhaarAsync(
+        IdfyTaskRequest<IdfyMaskAadhaarData> r, CancellationToken ct = default)
+    {
+        LastMaskData = r.Data;
+        return Task.FromResult(Result(new IdfyTaskResponse<MaskResult> { Status = "completed", Type = "ind_aadhaar" }));
+    }
+
     public Task<IdfyTaskResponse<DrivingLicenseResult>> ExtractDrivingLicenseAsync(
         IdfyTaskRequest<IdfyDocumentData> r, CancellationToken ct = default) =>
         Task.FromResult(Result(new IdfyTaskResponse<DrivingLicenseResult> { Status = "completed", Type = "ind_driving_license" }));
@@ -209,6 +218,24 @@ public sealed class IntegrationTests : IClassFixture<IntegrationTests.Factory>
         var resp = await Client().PostAsJsonAsync("/api/aadhaar/extract",
             new { document = "https://x/a.jpg", consent });
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task Aadhaar_mask_requires_consent()
+    {
+        var resp = await Client().PostAsJsonAsync("/api/aadhaar/mask", new { document = "https://x/a.jpg" });
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task Aadhaar_mask_forwards_consent_and_flags()
+    {
+        var resp = await Client().PostAsJsonAsync("/api/aadhaar/mask",
+            new { document = "https://x/a.jpg", consent = true, advancedFeatures = new Dictionary<string, bool> { ["masker"] = true } });
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        Assert.Equal("yes", _factory.Idfy.LastMaskData!.Consent);
+        Assert.NotNull(_factory.Idfy.LastMaskData!.AdvancedFeatures);
+        Assert.True((bool)_factory.Idfy.LastMaskData!.AdvancedFeatures!["masker"]!);
     }
 
     [Fact]

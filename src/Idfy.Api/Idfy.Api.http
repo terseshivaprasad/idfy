@@ -231,4 +231,14 @@ Content-Type: application/json
 GET {{Idfy.Api_HostAddress}}/api/pan-aadhaar-link/verify/a957d82c-987c-4fa9-b69f-6765dc3c1035
 x-api-key: {{apiKey}}
 
+### Aadhaar masking (sync) - masks the Aadhaar number in the image, returns URLs
+POST {{Idfy.Api_HostAddress}}/api/aadhaar/mask
+x-api-key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "document": "https://example.com/aadhaar.jpg",
+  "consent": true
+}
+
 ###
