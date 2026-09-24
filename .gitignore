@@ -1,0 +1,24 @@
+# Build output
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+*.dll
+*.exe
+*.pdb
+
+# .NET
+project.lock.json
+*.user
+*.suo
+
+# Rider / VS / VS Code
+.vs/
+.vscode/
+.idea/
+*.DS_Store
+
+# Local secrets (never commit)
+secrets.json
+appsettings.*.Local.json
+*.env

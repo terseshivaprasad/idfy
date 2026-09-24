@@ -1,0 +1,20 @@
+# Local SQL Server Express (free) for the request/response + exception log tables.
+# Create the schema afterwards (idempotent):
+#   docker exec -i idfy-sql /opt/mssql-tools18/bin/sqlcmd -C -U sa -P "$MSSQL_SA_PASSWORD" -Q "IF DB_ID('IdfyLogs') IS NULL CREATE DATABASE IdfyLogs"
+#   docker exec -i idfy-sql /opt/mssql-tools18/bin/sqlcmd -C -U sa -P "$MSSQL_SA_PASSWORD" -d IdfyLogs < db/log-tables.sql
+services:
+  sql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64 # no arm64 image; runs under Rosetta on Apple Silicon
+    container_name: idfy-sql
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Express
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-IdfyDev#2026!}
+    ports:
+      - "14333:1433"
+    volumes:
+      - idfy-sql-data:/var/opt/mssql
+
+volumes:
+  idfy-sql-data:

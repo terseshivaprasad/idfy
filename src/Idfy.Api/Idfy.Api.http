@@ -1,0 +1,55 @@
+@Idfy.Api_HostAddress = http://localhost:5142
+
+### Validate by URL / Base64
+# docType (optional): ind_pan | ind_aadhaar | ind_voter_id | ind_driving_license | ind_passport
+# Detect* flags need their key names set under Idfy:AdvancedFeatureKeys.
+POST {{Idfy.Api_HostAddress}}/api/documents/validate
+Content-Type: application/json
+
+{
+  "document": "https://example.com/pan.jpg",
+  "docType": "ind_pan",
+  "detectDocSide": true,
+  "detectFace": true,
+  "detectScanned": true
+}
+
+### Validate by file upload
+POST {{Idfy.Api_HostAddress}}/api/documents/validate/upload
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="pan.jpg"
+Content-Type: image/jpeg
+
+< ./pan.jpg
+--boundary
+Content-Disposition: form-data; name="docType"
+
+ind_pan
+--boundary
+Content-Disposition: form-data; name="detectFace"
+
+true
+--boundary--
+
+### PAN extraction (OCR) by URL / Base64
+POST {{Idfy.Api_HostAddress}}/api/pan/extract
+Content-Type: application/json
+
+{
+  "document": "https://example.com/pan.jpg"
+}
+
+### PAN extraction (OCR) by file upload
+POST {{Idfy.Api_HostAddress}}/api/pan/extract/upload
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="pan.jpg"
+Content-Type: image/jpeg
+
+< ./pan.jpg
+--boundary--
+
+###
