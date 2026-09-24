@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
@@ -16,54 +18,47 @@ public sealed class ApiKeyOptions
     public HashSet<string> Keys { get; set; } = [];
 }
 
-/// <summary>Authenticates callers by a shared key in a request header. Constant-time compared.</summary>
+/// <summary>
+/// Validates presented keys against SHA-256 hashes of the configured keys, computed once at startup.
+/// The raw keys are not retained, and matching a hash reveals nothing about the key on a timing side channel.
+/// </summary>
+public sealed class ApiKeyValidator
+{
+    private readonly HashSet<string> _hashes;
+
+    public string HeaderName { get; }
+
+    public ApiKeyValidator(IOptions<ApiKeyOptions> options)
+    {
+        var config = options.Value;
+        HeaderName = config.HeaderName;
+        _hashes = config.Keys.Select(Hash).ToHashSet(StringComparer.Ordinal);
+    }
+
+    public bool IsValid(string? key) => !string.IsNullOrEmpty(key) && _hashes.Contains(Hash(key));
+
+    private static string Hash(string key) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key)));
+}
+
+/// <summary>Authenticates callers by a shared key in a request header.</summary>
 public sealed class ApiKeyAuthenticationHandler(
     IOptionsMonitor<AuthenticationSchemeOptions> options,
     ILoggerFactory logger,
     UrlEncoder encoder,
-    IOptionsMonitor<ApiKeyOptions> apiKeyOptions)
+    ApiKeyValidator validator)
     : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
 {
     public const string SchemeName = "ApiKey";
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        var config = apiKeyOptions.CurrentValue;
-
-        if (!Request.Headers.TryGetValue(config.HeaderName, out var provided) || provided.Count == 0)
+        if (!Request.Headers.TryGetValue(validator.HeaderName, out var provided) || provided.Count == 0)
             return Task.FromResult(AuthenticateResult.NoResult());
 
-        var key = provided.ToString();
-        // Compare against every configured key without short-circuiting on length/content.
-        var matched = false;
-        foreach (var candidate in config.Keys)
-            matched |= CryptographicOperations.FixedTimeEquals(key, candidate);
-
-        if (!matched)
+        if (!validator.IsValid(provided.ToString()))
             return Task.FromResult(AuthenticateResult.Fail("Invalid API key."));
 
-        var identity = new ClaimsIdentity(SchemeName);
-        var principal = new ClaimsPrincipal(identity);
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(SchemeName));
         return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(principal, SchemeName)));
-    }
-}
-
-internal static class CryptographicOperations
-{
-    /// <summary>Length-independent constant-time string comparison over UTF-8 bytes.</summary>
-    public static bool FixedTimeEquals(string a, string b)
-    {
-        var x = System.Text.Encoding.UTF8.GetBytes(a);
-        var y = System.Text.Encoding.UTF8.GetBytes(b);
-        return System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(
-            Pad(x, Math.Max(x.Length, y.Length)), Pad(y, Math.Max(x.Length, y.Length))) && x.Length == y.Length;
-    }
-
-    private static byte[] Pad(byte[] data, int length)
-    {
-        if (data.Length == length) return data;
-        var padded = new byte[length];
-        data.CopyTo(padded, 0);
-        return padded;
     }
 }

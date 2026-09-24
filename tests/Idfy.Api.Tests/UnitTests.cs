@@ -89,21 +89,26 @@ public class IdfyApiExceptionTests
     }
 }
 
-public class ApiKeyComparisonTests
+public class ApiKeyValidatorTests
 {
+    private static ApiKeyValidator Validator(params string[] keys) =>
+        new(Microsoft.Extensions.Options.Options.Create(new ApiKeyOptions { Keys = [.. keys] }));
+
     [Fact]
-    public void Equal_keys_match()
+    public void Accepts_a_configured_key()
     {
-        Assert.True(CryptographicOperations.FixedTimeEquals("secret-key", "secret-key"));
+        Assert.True(Validator("secret-key", "other-key").IsValid("secret-key"));
+        Assert.True(Validator("secret-key", "other-key").IsValid("other-key"));
     }
 
     [Theory]
-    [InlineData("secret-key", "secret-kez")]
-    [InlineData("secret-key", "secret-key-longer")]
-    [InlineData("", "x")]
-    public void Different_keys_do_not_match(string a, string b)
+    [InlineData("wrong-key")]
+    [InlineData("secret-kez")]
+    [InlineData("")]
+    [InlineData(null)]
+    public void Rejects_unknown_or_empty_key(string? key)
     {
-        Assert.False(CryptographicOperations.FixedTimeEquals(a, b));
+        Assert.False(Validator("secret-key").IsValid(key));
     }
 }
 

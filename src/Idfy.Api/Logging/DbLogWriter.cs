@@ -63,9 +63,14 @@ public sealed class DbLogWriter(
         }
     }
 
-    public override Task StopAsync(CancellationToken cancellationToken)
+    public override async Task StopAsync(CancellationToken cancellationToken)
     {
+        // Stop accepting new entries and let ExecuteAsync drain what's queued (within the host
+        // ShutdownTimeout). On an IIS app-pool recycle / iisreset this is our chance to flush.
         queue.Complete();
-        return base.StopAsync(cancellationToken);
+        await base.StopAsync(cancellationToken);
+
+        if (queue.Reader.TryPeek(out _))
+            logger.LogWarning("Shutdown drain did not finish; some log entries may not have been written.");
     }
 }

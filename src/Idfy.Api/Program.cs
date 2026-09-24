@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Idfy.Api.Data;
@@ -7,9 +8,20 @@ using Idfy.Api.Options;
 using Idfy.Api.Security;
 using Idfy.Api.Services;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Give hosted services (the log writer especially) time to drain on shutdown / IIS app-pool
+// recycle. Keep this below the IIS ANCM shutdownTimeLimit in web.config so the drain isn't cut off.
+builder.Services.Configure<HostOptions>(o =>
+    o.ShutdownTimeout = TimeSpan.FromSeconds(builder.Configuration.GetValue("ShutdownTimeoutSeconds", 25)));
+
+// Cap the request body up front (base64 images are checked at 3MB; multipart uploads at 10MB).
+builder.WebHost.ConfigureKestrel(o =>
+    o.Limits.MaxRequestBodySize = builder.Configuration.GetValue("MaxRequestBodyBytes", 11 * 1024 * 1024));
 
 builder.Services.AddOptions<IdfyOptions>()
     .Bind(builder.Configuration.GetSection(IdfyOptions.SectionName))
@@ -60,6 +72,7 @@ builder.Services.AddOptions<ApiKeyOptions>()
     .Validate(o => o.Keys.Count > 0, "At least one ApiAuth:Keys value must be configured.")
     .ValidateOnStart();
 
+builder.Services.AddSingleton<ApiKeyValidator>();
 builder.Services.AddAuthentication(ApiKeyAuthenticationHandler.SchemeName)
     .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(ApiKeyAuthenticationHandler.SchemeName, null);
 
@@ -100,11 +113,36 @@ builder.Services.ConfigureHttpJsonOptions(o =>
     o.SerializerOptions.UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow; // reject unknown params
 });
 
+// Trust the forwarded client IP/proto only when explicitly enabled (i.e. behind a known proxy),
+// so an attacker cannot spoof X-Forwarded-For when the app is exposed directly.
+var forwardedHeadersEnabled = builder.Configuration.GetValue("ForwardedHeaders:Enabled", false);
+if (forwardedHeadersEnabled)
+{
+    builder.Services.Configure<ForwardedHeadersOptions>(o =>
+    {
+        o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        o.KnownIPNetworks.Clear();
+        o.KnownProxies.Clear();
+    });
+}
+
+builder.Services.AddResponseCompression(o =>
+{
+    o.EnableForHttps = true;
+    o.Providers.Add<BrotliCompressionProvider>();
+    o.Providers.Add<GzipCompressionProvider>();
+});
+
 builder.Services.AddValidation();
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+if (forwardedHeadersEnabled)
+    app.UseForwardedHeaders();
+
+app.UseResponseCompression();
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
