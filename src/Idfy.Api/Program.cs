@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Idfy.Api.Data;
 using Idfy.Api.Endpoints;
@@ -22,7 +23,7 @@ builder.Services.AddSingleton(new LogRepository(logDbConnection));
 builder.Services.AddSingleton<DbLogQueue>();
 builder.Services.AddHostedService<DbLogWriter>();
 builder.Services.AddTransient<IdfyLoggingHandler>();
-builder.Services.AddExceptionHandler<DbExceptionHandler>();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 builder.Services.AddOptions<LogRetentionOptions>()
     .Bind(builder.Configuration.GetSection(LogRetentionOptions.SectionName));
@@ -90,6 +91,13 @@ builder.Services.AddRateLimiter(limiter =>
             QueueLimit = 0,
         });
     });
+});
+
+builder.Services.ConfigureHttpJsonOptions(o =>
+{
+    // Inbound request binding only (does not affect IDfy response parsing, which may carry extra fields).
+    o.SerializerOptions.AllowDuplicateProperties = false;              // duplicate-parameter detection
+    o.SerializerOptions.UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow; // reject unknown params
 });
 
 builder.Services.AddValidation();

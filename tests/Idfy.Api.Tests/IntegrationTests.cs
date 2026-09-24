@@ -155,6 +155,41 @@ public sealed class IntegrationTests : IClassFixture<IntegrationTests.Factory>
         finally { _factory.Idfy.ThrowOnCall = null; }
     }
 
+    private static StringContent Json(string raw) => new(raw, System.Text.Encoding.UTF8, "application/json");
+
+    [Fact]
+    public async Task Rejects_duplicate_json_property()
+    {
+        var resp = await Client().PostAsync("/api/pan/extract",
+            Json("""{"document":"https://x/a.jpg","document":"https://x/b.jpg"}"""));
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task Rejects_unknown_json_property()
+    {
+        var resp = await Client().PostAsync("/api/pan/extract",
+            Json("""{"document":"https://x/a.jpg","documnet":"typo"}"""));
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task Unexpected_error_returns_500_without_leaking_details()
+    {
+        _factory.Idfy.ThrowOnCall = new InvalidOperationException("boom-secret-internal-detail");
+        try
+        {
+            var resp = await Client().PostAsJsonAsync("/api/pan/extract", new { document = "https://x/p.jpg" });
+            Assert.Equal(HttpStatusCode.InternalServerError, resp.StatusCode);
+
+            var body = await resp.Content.ReadAsStringAsync();
+            Assert.DoesNotContain("boom-secret-internal-detail", body);
+            Assert.DoesNotContain("InvalidOperationException", body);
+            Assert.Contains("traceId", body);
+        }
+        finally { _factory.Idfy.ThrowOnCall = null; }
+    }
+
     [Fact]
     public async Task Passport_second_document_is_optional()
     {
