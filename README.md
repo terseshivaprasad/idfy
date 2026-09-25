@@ -95,9 +95,10 @@ processing, `200` once complete).
   (format-validated).
 
 See [`src/Idfy.Api/Idfy.Api.http`](src/Idfy.Api/Idfy.Api.http) for runnable
-examples of every endpoint, and [`docs/INTEGRATION.md`](docs/INTEGRATION.md)
-for the full integration guide (request/response fields, async polling, error
-handling, retry guidance).
+examples of every endpoint. [`docs/API-REFERENCE.md`](docs/API-REFERENCE.md)
+has each endpoint's request and response, and
+[`docs/INTEGRATION.md`](docs/INTEGRATION.md) covers async polling, error
+handling and retry guidance.
 
 ## CORS
 
