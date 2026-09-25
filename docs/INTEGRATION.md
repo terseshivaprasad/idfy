@@ -247,8 +247,8 @@ Image checks:
   for IDfy, and sync verify and OCR calls can take that long.
 - **Idfy.Api never retries calls to IDfy.** Each call that reaches IDfy may use
   IDfy credits. Resending an extraction or verification can be charged twice.
-- **Safe to retry:** `429` (after a backoff), and `502` when the detail
-  indicates IDfy was unreachable.
+- **Safe to retry:** `429` (after a backoff), and a `502` with no
+  `idfyStatus`, which means Idfy.Api couldn't reach IDfy at all.
 - **Retry with care:** `504`. IDfy may still have finished the task and charged
   for it. For verify-with-source, the async flow avoids this.
 - **Don't retry without changes:** `400`, `413`, `415`, `422` and `501`. The

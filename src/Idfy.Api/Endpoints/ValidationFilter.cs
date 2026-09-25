@@ -12,20 +12,27 @@ internal static class ValidationFilter
     public static EndpointFilterDelegate Factory(EndpointFilterFactoryContext factoryContext, EndpointFilterDelegate next)
     {
         // Resolved once per endpoint: which handler arguments are our own request models.
-        var indexes = factoryContext.MethodInfo.GetParameters()
+        var parameters = factoryContext.MethodInfo.GetParameters()
             .Where(p => IsValidatable(p.ParameterType))
-            .Select(p => p.Position)
             .ToArray();
 
-        if (indexes.Length == 0)
+        if (parameters.Length == 0)
             return next;
 
         return async context =>
         {
-            foreach (var index in indexes)
+            foreach (var parameter in parameters)
             {
-                if (context.Arguments[index] is not { } argument)
+                if (context.Arguments[parameter.Position] is not { } argument)
+                {
+                    // A multipart body with no recognised field binds the whole form as null.
+                    if (typeof(FileUploadForm).IsAssignableFrom(parameter.ParameterType))
+                        return TypedResults.ValidationProblem(new Dictionary<string, string[]>
+                        {
+                            [nameof(FileUploadForm.File)] = [$"The {nameof(FileUploadForm.File)} field is required."],
+                        });
                     continue;
+                }
 
                 var results = new List<ValidationResult>();
                 if (Validator.TryValidateObject(argument, new ValidationContext(argument), results, validateAllProperties: true))

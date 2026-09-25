@@ -312,6 +312,70 @@ public sealed class IntegrationTests : IClassFixture<IntegrationTests.Factory>
         Assert.Contains("\"traceId\"", body);
     }
 
+    private static ByteArrayContent Image() =>
+        new([1, 2, 3]) { Headers = { ContentType = new MediaTypeHeaderValue("image/png") } };
+
+    [Theory]
+    [InlineData("/api/documents/validate/upload")]
+    [InlineData("/api/pan/extract/upload")]
+    [InlineData("/api/aadhaar/extract/upload")]
+    [InlineData("/api/aadhaar/mask/upload")]
+    [InlineData("/api/driving-license/extract/upload")]
+    [InlineData("/api/passport/extract/upload")]
+    [InlineData("/api/voter-id/extract/upload")]
+    [InlineData("/api/face/compare/upload")]
+    public async Task Upload_without_any_known_field_is_a_400_not_a_500(string path)
+    {
+        using var form = new MultipartFormDataContent { { new StringContent("1"), "unrelated" } };
+
+        var resp = await Client().PostAsync(path, form);
+
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+        Assert.Contains("\"File\"", await resp.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Upload_with_fields_but_no_file_reports_file_required()
+    {
+        using var form = new MultipartFormDataContent { { new StringContent("true"), "consent" } };
+
+        var resp = await Client().PostAsync("/api/aadhaar/extract/upload", form);
+
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+        Assert.Contains("\"File\"", await resp.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Face_compare_upload_requires_second_file()
+    {
+        using var form = new MultipartFormDataContent { { Image(), "file", "a.png" } };
+
+        var resp = await Client().PostAsync("/api/face/compare/upload", form);
+
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+        Assert.Contains("\"File2\"", await resp.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Unreachable_idfy_returns_502_without_upstream_detail()
+    {
+        _factory.Idfy.ThrowOnCall = new HttpRequestException("Connection refused (10.20.30.40:443)");
+        try
+        {
+            var resp = await Client().PostAsJsonAsync("/api/pan/extract", new { document = "https://x/p.jpg" });
+
+            Assert.Equal(HttpStatusCode.BadGateway, resp.StatusCode);
+            var body = await resp.Content.ReadAsStringAsync();
+            Assert.Contains("UPSTREAM_ERROR", body);
+            Assert.DoesNotContain("10.20.30.40", body);
+            Assert.DoesNotContain("Connection refused", body);
+        }
+        finally
+        {
+            _factory.Idfy.ThrowOnCall = null;
+        }
+    }
+
     [Fact]
     public async Task Endpoint_problem_responses_carry_trace_id()
     {

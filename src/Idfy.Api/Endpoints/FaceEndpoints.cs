@@ -64,5 +64,6 @@ public static class FaceEndpoints
 public sealed class FaceCompareUploadForm : FileUploadForm
 {
     /// <summary>Second image to compare against <see cref="FileUploadForm.File"/>.</summary>
+    [System.ComponentModel.DataAnnotations.Required]
     public IFormFile? File2 { get; set; }
 }

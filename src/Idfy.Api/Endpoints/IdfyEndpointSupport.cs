@@ -64,9 +64,9 @@ internal static class IdfyEndpointSupport
         {
             return TypedResults.Problem("IDfy request timed out.", statusCode: StatusCodes.Status504GatewayTimeout);
         }
-        catch (HttpRequestException ex)
+        catch (HttpRequestException)
         {
-            return TypedResults.Problem($"Could not reach IDfy: {ex.Message}", statusCode: StatusCodes.Status502BadGateway);
+            return Unreachable();
         }
     }
 
@@ -85,11 +85,21 @@ internal static class IdfyEndpointSupport
         {
             return TypedResults.Problem("IDfy request timed out.", statusCode: StatusCodes.Status504GatewayTimeout);
         }
-        catch (HttpRequestException ex)
+        catch (HttpRequestException)
         {
-            return TypedResults.Problem($"Could not reach IDfy: {ex.Message}", statusCode: StatusCodes.Status502BadGateway);
+            return Unreachable();
         }
     }
+
+    /// <summary>
+    /// IDfy could not be reached (DNS, refused, reset). The exception, which names the upstream host,
+    /// is recorded in ApiCallLogs by IdfyLoggingHandler rather than returned to the caller.
+    /// </summary>
+    private static ProblemHttpResult Unreachable() =>
+        TypedResults.Problem(
+            title: "UPSTREAM_ERROR",
+            detail: "The document verification service is unavailable.",
+            statusCode: StatusCodes.Status502BadGateway);
 
     /// <summary>
     /// Caller-fixable IDfy errors keep their status and IDfy's code/message. Our own problems
@@ -148,5 +158,6 @@ internal static class IdfyEndpointSupport
 
 public class FileUploadForm
 {
+    [System.ComponentModel.DataAnnotations.Required]
     public IFormFile? File { get; set; }
 }
