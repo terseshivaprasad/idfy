@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Idfy.Api.Models;
 using Idfy.Api.Services;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
@@ -401,6 +402,28 @@ public sealed class IntegrationTests : IClassFixture<IntegrationTests.Factory>
         Assert.Contains("\"PanNumber\"", body);
         Assert.Contains("\"AadhaarNumber\"", body);
         Assert.Contains("\"traceId\"", body);
+    }
+
+    [Theory]
+    [InlineData("/test")] // redirected to /test/
+    [InlineData("/test/")]
+    [InlineData("/test/pan-extract.html")]
+    [InlineData("/test/assets/tester.js")]
+    public async Task Test_pages_are_served_in_development(string path)
+    {
+        var resp = await Client().GetAsync(path);
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("/test/")]
+    [InlineData("/test/pan-extract.html")]
+    [InlineData("/test/assets/tester.js")]
+    public async Task Test_pages_are_not_served_outside_development(string path)
+    {
+        using var production = _factory.WithWebHostBuilder(b => b.UseEnvironment("Production"));
+        var resp = await production.CreateClient().GetAsync(path);
+        Assert.Equal(HttpStatusCode.NotFound, resp.StatusCode);
     }
 
     [Fact]

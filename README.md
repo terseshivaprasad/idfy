@@ -207,10 +207,22 @@ dotnet run
 dotnet test           # from the repo root
 ```
 
+## Browser test pages
+
+In Development, the API serves a test console at **`/test/`** (e.g.
+`http://localhost:5142/test/`): one page per endpoint that builds the request,
+sends it, and shows the URL, the request and the response. Upload images as
+files, convert a file to Base64 for the JSON endpoints, edit the JSON body by
+hand to test error cases, and follow async submissions through to the poll
+result. The pages live in `src/Idfy.Api/wwwroot/test/`, are not served outside
+Development, and are excluded from `dotnet publish`. Calls reach the configured
+IDfy account and can use credits.
+
 ## Project layout
 
 ```
-src/Idfy.Api/         The API (Endpoints, Services, Models, Logging, Data, Options)
+src/Idfy.Api/         The API (Endpoints, Services, Models, Logging, Data, Options;
+                      wwwroot/test = Development-only browser test pages)
 tests/Idfy.Api.Tests/ xUnit unit + integration tests
 db/log-tables.sql     Log table schema
 docker-compose.yml    Local SQL Server Express

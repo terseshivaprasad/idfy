@@ -145,6 +145,14 @@ app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
+if (app.Environment.IsDevelopment())
+{
+    // Browser test pages for every endpoint (wwwroot/test, not published). Served ahead of the
+    // rate limiter so page assets don't use up the per-IP budget; same origin, so no CORS needed.
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
+}
+
 app.UseRateLimiter();
 app.UseCors(CorsOptions.PolicyName);
 

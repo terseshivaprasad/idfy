@@ -9,6 +9,8 @@
 
   <ItemGroup>
     <None Update="web.config" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Development-only browser test pages: served by `dotnet run`, never published. -->
+    <Content Update="wwwroot\test\**" CopyToPublishDirectory="Never" />
   </ItemGroup>
 
 
