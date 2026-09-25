@@ -13,30 +13,27 @@ public static class AadhaarEndpoints
     // Aadhaar consent is mandatory; the upload form has no consent field, so it defaults to explicit opt-in.
     private const string Consent = "yes";
 
-    extension(IEndpointRouteBuilder app)
+    public static IEndpointRouteBuilder MapAadhaarEndpoints(this IEndpointRouteBuilder app)
     {
-        public IEndpointRouteBuilder MapAadhaarEndpoints()
-        {
-            var group = app.MapGroup("/api/aadhaar").WithTags("Aadhaar");
+        var group = app.MapGroup("/api/aadhaar").WithTags("Aadhaar");
 
-            group.MapPost("/extract", Extract)
-                .WithSummary("Extract Aadhaar details (OCR) from a URL or Base64 image. Requires consent.");
+        group.MapPost("/extract", Extract)
+            .WithSummary("Extract Aadhaar details (OCR) from a URL or Base64 image. Requires consent.");
 
-            group.MapPost("/extract/upload", ExtractUpload)
-                .WithSummary("Extract Aadhaar details (OCR) from an uploaded image file. Requires consent.")
-                .WithMetadata(new RequestSizeLimitAttribute(MaxUploadBytes))
-                .DisableAntiforgery();
+        group.MapPost("/extract/upload", ExtractUpload)
+            .WithSummary("Extract Aadhaar details (OCR) from an uploaded image file. Requires consent.")
+            .WithMetadata(new RequestSizeLimitAttribute(MaxUploadBytes))
+            .DisableAntiforgery();
 
-            group.MapPost("/mask", Mask)
-                .WithSummary("Mask the Aadhaar number in a document image (URL/Base64). Requires consent.");
+        group.MapPost("/mask", Mask)
+            .WithSummary("Mask the Aadhaar number in a document image (URL/Base64). Requires consent.");
 
-            group.MapPost("/mask/upload", MaskUpload)
-                .WithSummary("Mask the Aadhaar number in an uploaded image file. Requires consent.")
-                .WithMetadata(new RequestSizeLimitAttribute(MaxUploadBytes))
-                .DisableAntiforgery();
+        group.MapPost("/mask/upload", MaskUpload)
+            .WithSummary("Mask the Aadhaar number in an uploaded image file. Requires consent.")
+            .WithMetadata(new RequestSizeLimitAttribute(MaxUploadBytes))
+            .DisableAntiforgery();
 
-            return app;
-        }
+        return app;
     }
 
     private static async Task<Results<Ok<IdfyTaskResponse<MaskResult>>, ProblemHttpResult>> Mask(

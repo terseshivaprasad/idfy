@@ -111,3 +111,48 @@ public class ValidationAttributeTests
         Assert.Equal(expected, new DocTypeAttribute().IsValid(value));
     }
 }
+
+public class IdfyClientParsingTests
+{
+    private sealed class StubHandler(string body) : HttpMessageHandler
+    {
+        public string? RequestBody { get; private set; }
+        public Uri? RequestUri { get; private set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            RequestUri = request.RequestUri;
+            RequestBody = request.Content is null ? null : await request.Content.ReadAsStringAsync(ct);
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(body) };
+        }
+    }
+
+    [Fact]
+    public async Task ExtractVoterId_unwraps_array_response()
+    {
+        // Sample response from the IDfy docs (array-wrapped, age as a string).
+        var handler = new StubHandler("""
+            [{"action":"extract","completed_at":"2024-07-12T12:19:14+05:30","created_at":"2024-07-12T12:19:11+05:30",
+              "group_id":"ede0db2e-ce59-4d91-9613-69d69ba984fb","request_id":"5143aeaa-800c-4299-bcf6-8cd645f34cd3",
+              "result":{"extraction_output":{"address":"ABC DEF","age":"28","date_of_birth":"1996-01-01","district":"NAGAUR",
+                "fathers_name":"ABC DEF","gender":"Male","house_number":"713","id_number":"T*****0275","is_scanned":false,
+                "name_on_card":"ABC DEF","pincode":"341001","state":"Rajasthan","street_address":"ABC DEF","year_of_birth":""}},
+              "status":"completed","task_id":"add63ed7-b6b6-4081-9172-f522ba017cbd","type":"ind_voter_id"}]
+            """);
+        var client = new IdfyClient(new HttpClient(handler) { BaseAddress = new Uri("https://eve.idfy.com/") },
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<IdfyClient>.Instance);
+
+        var response = await client.ExtractVoterIdAsync(
+            new IdfyTaskRequest<IdfyVoterIdData>("t1", "g1", new IdfyVoterIdData("https://x/front.jpg", null)));
+
+        Assert.Equal("https://eve.idfy.com/v3/tasks/sync/extract/ind_voter_id", handler.RequestUri!.ToString());
+        Assert.DoesNotContain("document2", handler.RequestBody); // omitted when not given
+        Assert.Equal("completed", response.Status);
+        Assert.Equal("ind_voter_id", response.Type);
+        var output = response.Result!.ExtractionOutput!;
+        Assert.Equal("28", output.Age);
+        Assert.Equal("T*****0275", output.IdNumber);
+        Assert.Equal("NAGAUR", output.District);
+        Assert.False(output.IsScanned);
+    }
+}

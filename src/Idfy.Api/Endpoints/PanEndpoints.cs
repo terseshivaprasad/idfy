@@ -10,22 +10,19 @@ namespace Idfy.Api.Endpoints;
 
 public static class PanEndpoints
 {
-    extension(IEndpointRouteBuilder app)
+    public static IEndpointRouteBuilder MapPanEndpoints(this IEndpointRouteBuilder app)
     {
-        public IEndpointRouteBuilder MapPanEndpoints()
-        {
-            var group = app.MapGroup("/api/pan").WithTags("PAN");
+        var group = app.MapGroup("/api/pan").WithTags("PAN");
 
-            group.MapPost("/extract", Extract)
-                .WithSummary("Extract PAN card details (OCR) from a URL or Base64 image.");
+        group.MapPost("/extract", Extract)
+            .WithSummary("Extract PAN card details (OCR) from a URL or Base64 image.");
 
-            group.MapPost("/extract/upload", ExtractUpload)
-                .WithSummary("Extract PAN card details (OCR) from an uploaded image file.")
-                .WithMetadata(new RequestSizeLimitAttribute(MaxUploadBytes))
-                .DisableAntiforgery();
+        group.MapPost("/extract/upload", ExtractUpload)
+            .WithSummary("Extract PAN card details (OCR) from an uploaded image file.")
+            .WithMetadata(new RequestSizeLimitAttribute(MaxUploadBytes))
+            .DisableAntiforgery();
 
-            return app;
-        }
+        return app;
     }
 
     private static async Task<Results<Ok<IdfyTaskResponse<PanExtractionResult>>, ProblemHttpResult>> Extract(

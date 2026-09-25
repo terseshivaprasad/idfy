@@ -40,6 +40,8 @@ public sealed class IdfyOptions
     public ImageLimits DrivingLicenseImageLimits { get; set; } = new() { MinDimension = 150, MaxDimension = 10_000 };
 
     public ImageLimits PassportImageLimits { get; set; } = new() { MinDimension = 150, MaxDimension = 10_000 };
+
+    public ImageLimits VoterIdImageLimits { get; set; } = new() { MinDimension = 150, MaxDimension = 10_000 };
 }
 
 public sealed class ImageLimits

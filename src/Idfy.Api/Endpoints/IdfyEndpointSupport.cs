@@ -41,12 +41,12 @@ internal static class IdfyEndpointSupport
 
         using var ms = new MemoryStream();
         await file.CopyToAsync(ms, ct);
-        var image = ms.GetBuffer().AsSpan(0, (int)ms.Length);
+        var length = (int)ms.Length;
 
-        if (CheckResolution(image, limits) is { } badSize)
+        if (CheckResolution(ms.GetBuffer().AsSpan(0, length), limits) is { } badSize)
             return (null, badSize);
 
-        return (Convert.ToBase64String(image), null);
+        return (Convert.ToBase64String(ms.GetBuffer(), 0, length), null);
     }
 
     /// <summary>Runs an IDfy call and turns failures into ProblemDetails.</summary>

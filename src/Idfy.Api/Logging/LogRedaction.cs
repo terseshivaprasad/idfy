@@ -83,7 +83,7 @@ public static class LogRedaction
         RedactRequest(TryParse(body), body);
 
     /// <summary>
-    /// Pulls out task/group ids and replaces an inline Base64 document with a placeholder:
+    /// Pulls out task/group ids and replaces inline Base64 documents with a placeholder:
     /// it is identity-document PII and can be megabytes. URLs are kept as-is. Mutates <paramref name="parsed"/>.
     /// </summary>
     public static (string? TaskId, string? GroupId, string? Body) RedactRequest(JsonNode? parsed, string? original)
@@ -95,11 +95,11 @@ public static class LogRedaction
         if (parsed is not JsonObject root)
             return (null, null, original);
 
-        if (root["data"]?["document1"] is JsonValue doc && doc.TryGetValue<string>(out var value)
-            && !value.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
-            && !value.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        if (root["data"] is JsonObject data)
         {
-            root["data"]!["document1"] = $"[base64 redacted, {value.Length} chars]";
+            // document2: passport/voter-id back page, second face-compare image.
+            RedactInlineDocument(data, "document1");
+            RedactInlineDocument(data, "document2");
         }
 
         // Also mask any PII the request itself carries (e.g. id_number, date_of_birth for verify tasks).

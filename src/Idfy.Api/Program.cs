@@ -102,9 +102,10 @@ builder.Services.AddRateLimiter(limiter =>
 builder.Services.ConfigureHttpJsonOptions(o =>
 {
     // Inbound request binding only (does not affect IDfy response parsing, which may carry extra fields).
-    o.SerializerOptions.AllowDuplicateProperties = false;              // duplicate-parameter detection
+    // Duplicate properties are rejected by DuplicateJsonPropertyMiddleware (no serializer option on .NET 8).
     o.SerializerOptions.UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow; // reject unknown params
 });
+builder.Services.AddSingleton<DuplicateJsonPropertyMiddleware>();
 
 // Trust the forwarded client IP/proto only when explicitly enabled (i.e. behind a known proxy),
 // so an attacker cannot spoof X-Forwarded-For when the app is exposed directly.
@@ -114,7 +115,7 @@ if (forwardedHeadersEnabled)
     builder.Services.Configure<ForwardedHeadersOptions>(o =>
     {
         o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-        o.KnownIPNetworks.Clear();
+        o.KnownNetworks.Clear();
         o.KnownProxies.Clear();
     });
 }
@@ -126,9 +127,9 @@ builder.Services.AddResponseCompression(o =>
     o.Providers.Add<GzipCompressionProvider>();
 });
 
-builder.Services.AddValidation();
-builder.Services.AddProblemDetails();
-builder.Services.AddOpenApi();
+builder.Services.AddProblemDetails(o => o.CustomizeProblemDetails = ProblemTraceId.Customize);
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
@@ -149,21 +150,30 @@ app.UseCors(CorsOptions.PolicyName);
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    // Same path the .NET 9+ built-in OpenAPI document used.
+    app.UseSwagger(o => o.RouteTemplate = "openapi/{documentName}.json");
 }
 
 app.UseHttpsRedirection();
 
+app.UseMiddleware<DuplicateJsonPropertyMiddleware>();
+
 app.MapHealthChecks("/health");
 
-app.MapDocumentEndpoints();
-app.MapPanEndpoints();
-app.MapAadhaarEndpoints();
-app.MapDrivingLicenseEndpoints();
-app.MapPassportEndpoints();
-app.MapVoterIdEndpoints();
-app.MapPanAadhaarLinkEndpoints();
-app.MapFaceEndpoints();
+// Every API endpoint validates its request model / upload form before the handler runs, and its
+// problem responses carry a traceId. (The trace filter is outermost so it also sees validation problems.)
+var api = app.MapGroup("")
+    .AddEndpointFilter(ProblemTraceId.Filter)
+    .AddEndpointFilterFactory(ValidationFilter.Factory);
+
+api.MapDocumentEndpoints();
+api.MapPanEndpoints();
+api.MapAadhaarEndpoints();
+api.MapDrivingLicenseEndpoints();
+api.MapPassportEndpoints();
+api.MapVoterIdEndpoints();
+api.MapPanAadhaarLinkEndpoints();
+api.MapFaceEndpoints();
 
 app.Run();
 

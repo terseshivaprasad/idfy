@@ -120,6 +120,31 @@ Content-Type: image/jpeg
 < ./back.jpg
 --boundary--
 
+### Voter-id extraction (OCR) by URL / Base64 - document2 (back side) optional
+POST {{Idfy.Api_HostAddress}}/api/voter-id/extract
+Content-Type: application/json
+
+{
+  "document": "https://example.com/voter-front.jpg",
+  "document2": "https://example.com/voter-back.jpg"
+}
+
+### Voter-id extraction (OCR) by file upload - file2 (back side) optional
+POST {{Idfy.Api_HostAddress}}/api/voter-id/extract/upload
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="front.jpg"
+Content-Type: image/jpeg
+
+< ./front.jpg
+--boundary
+Content-Disposition: form-data; name="file2"; filename="back.jpg"
+Content-Type: image/jpeg
+
+< ./back.jpg
+--boundary--
+
 ### Driving-license verification (async) - submit, returns requestId
 POST {{Idfy.Api_HostAddress}}/api/driving-license/verify
 Content-Type: application/json

@@ -32,9 +32,8 @@ public sealed class IdfyLoggingHandler(DbLogQueue queue) : DelegatingHandler
         try
         {
             var response = await base.SendAsync(request, ct);
-            // Buffer so the body can be read here and again by the caller.
-            await response.Content.LoadIntoBufferAsync(ct);
             log.StatusCode = (int)response.StatusCode;
+            // ReadAsStringAsync buffers the content, so the caller can read the body again.
             var rawResponse = await response.Content.ReadAsStringAsync(ct);
             responseNode = LogRedaction.TryParse(rawResponse);
             log.ResponseBody = LogRedaction.MaskResponse(responseNode, rawResponse);

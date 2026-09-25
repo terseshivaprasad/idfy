@@ -10,22 +10,19 @@ namespace Idfy.Api.Endpoints;
 
 public static class DocumentEndpoints
 {
-    extension(IEndpointRouteBuilder app)
+    public static IEndpointRouteBuilder MapDocumentEndpoints(this IEndpointRouteBuilder app)
     {
-        public IEndpointRouteBuilder MapDocumentEndpoints()
-        {
-            var group = app.MapGroup("/api/documents").WithTags("Documents");
+        var group = app.MapGroup("/api/documents").WithTags("Documents");
 
-            group.MapPost("/validate", Validate)
-                .WithSummary("Validate a document given as a URL or Base64 string.");
+        group.MapPost("/validate", Validate)
+            .WithSummary("Validate a document given as a URL or Base64 string.");
 
-            group.MapPost("/validate/upload", ValidateUpload)
-                .WithSummary("Validate an uploaded image file (converted to Base64 before forwarding).")
-                .WithMetadata(new RequestSizeLimitAttribute(MaxUploadBytes))
-                .DisableAntiforgery();
+        group.MapPost("/validate/upload", ValidateUpload)
+            .WithSummary("Validate an uploaded image file (converted to Base64 before forwarding).")
+            .WithMetadata(new RequestSizeLimitAttribute(MaxUploadBytes))
+            .DisableAntiforgery();
 
-            return app;
-        }
+        return app;
     }
 
     private static async Task<Results<Ok<IdfyTaskResponse<DocumentValidationResult>>, ProblemHttpResult>> Validate(

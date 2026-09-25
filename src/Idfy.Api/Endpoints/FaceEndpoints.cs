@@ -10,22 +10,19 @@ namespace Idfy.Api.Endpoints;
 
 public static class FaceEndpoints
 {
-    extension(IEndpointRouteBuilder app)
+    public static IEndpointRouteBuilder MapFaceEndpoints(this IEndpointRouteBuilder app)
     {
-        public IEndpointRouteBuilder MapFaceEndpoints()
-        {
-            var group = app.MapGroup("/api/face").WithTags("Face");
+        var group = app.MapGroup("/api/face").WithTags("Face");
 
-            group.MapPost("/compare", Compare)
-                .WithSummary("Compare two face images (URL/Base64) and return a match result.");
+        group.MapPost("/compare", Compare)
+            .WithSummary("Compare two face images (URL/Base64) and return a match result.");
 
-            group.MapPost("/compare/upload", CompareUpload)
-                .WithSummary("Compare two uploaded face image files and return a match result.")
-                .WithMetadata(new RequestSizeLimitAttribute(MaxUploadBytes))
-                .DisableAntiforgery();
+        group.MapPost("/compare/upload", CompareUpload)
+            .WithSummary("Compare two uploaded face image files and return a match result.")
+            .WithMetadata(new RequestSizeLimitAttribute(MaxUploadBytes))
+            .DisableAntiforgery();
 
-            return app;
-        }
+        return app;
     }
 
     private static async Task<Results<Ok<IdfyTaskResponse<FaceCompareResult>>, ProblemHttpResult>> Compare(

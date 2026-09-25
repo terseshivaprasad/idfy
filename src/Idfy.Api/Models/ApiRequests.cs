@@ -79,6 +79,22 @@ public sealed class ExtractPassportRequest
     public Guid? GroupId { get; set; }
 }
 
+/// <summary>Request for voter-id extraction. document2 (back side) is optional.</summary>
+public sealed class ExtractVoterIdRequest
+{
+    /// <summary>Front side: publicly accessible image URL, or the image as Base64.</summary>
+    [Required, UrlOrBase64]
+    public string Document { get; set; } = string.Empty;
+
+    /// <summary>Back side (optional): image URL or Base64.</summary>
+    [UrlOrBase64]
+    public string? Document2 { get; set; }
+
+    public Guid? TaskId { get; set; }
+
+    public Guid? GroupId { get; set; }
+}
+
 /// <summary>Request for async driving-license verification against the government source.</summary>
 public sealed class VerifyDrivingLicenseRequest
 {

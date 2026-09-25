@@ -10,31 +10,28 @@ namespace Idfy.Api.Endpoints;
 
 public static class DrivingLicenseEndpoints
 {
-    extension(IEndpointRouteBuilder app)
+    public static IEndpointRouteBuilder MapDrivingLicenseEndpoints(this IEndpointRouteBuilder app)
     {
-        public IEndpointRouteBuilder MapDrivingLicenseEndpoints()
-        {
-            var group = app.MapGroup("/api/driving-license").WithTags("Driving License");
+        var group = app.MapGroup("/api/driving-license").WithTags("Driving License");
 
-            group.MapPost("/extract", Extract)
-                .WithSummary("Extract driving-license details (OCR) from a URL or Base64 image.");
+        group.MapPost("/extract", Extract)
+            .WithSummary("Extract driving-license details (OCR) from a URL or Base64 image.");
 
-            group.MapPost("/extract/upload", ExtractUpload)
-                .WithSummary("Extract driving-license details (OCR) from an uploaded image file.")
-                .WithMetadata(new RequestSizeLimitAttribute(MaxUploadBytes))
-                .DisableAntiforgery();
+        group.MapPost("/extract/upload", ExtractUpload)
+            .WithSummary("Extract driving-license details (OCR) from an uploaded image file.")
+            .WithMetadata(new RequestSizeLimitAttribute(MaxUploadBytes))
+            .DisableAntiforgery();
 
-            group.MapPost("/verify/sync", SyncVerify)
-                .WithSummary("Verify a driving licence against the government source synchronously (result returned directly).");
+        group.MapPost("/verify/sync", SyncVerify)
+            .WithSummary("Verify a driving licence against the government source synchronously (result returned directly).");
 
-            group.MapPost("/verify", SubmitVerify)
-                .WithSummary("Submit async driving-license verification against the government source; returns a requestId.");
+        group.MapPost("/verify", SubmitVerify)
+            .WithSummary("Submit async driving-license verification against the government source; returns a requestId.");
 
-            group.MapGet("/verify/{requestId}", PollVerify)
-                .WithSummary("Poll an async driving-license verification by requestId. 202 while still processing.");
+        group.MapGet("/verify/{requestId}", PollVerify)
+            .WithSummary("Poll an async driving-license verification by requestId. 202 while still processing.");
 
-            return app;
-        }
+        return app;
     }
 
     private static Task<Results<Ok<IdfyTaskResponse<DrivingLicenseSourceResult>>, ProblemHttpResult>> SyncVerify(

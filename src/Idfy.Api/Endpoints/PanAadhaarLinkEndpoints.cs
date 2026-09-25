@@ -7,23 +7,20 @@ namespace Idfy.Api.Endpoints;
 
 public static class PanAadhaarLinkEndpoints
 {
-    extension(IEndpointRouteBuilder app)
+    public static IEndpointRouteBuilder MapPanAadhaarLinkEndpoints(this IEndpointRouteBuilder app)
     {
-        public IEndpointRouteBuilder MapPanAadhaarLinkEndpoints()
-        {
-            var group = app.MapGroup("/api/pan-aadhaar-link").WithTags("PAN-Aadhaar Link");
+        var group = app.MapGroup("/api/pan-aadhaar-link").WithTags("PAN-Aadhaar Link");
 
-            group.MapPost("/verify/sync", SyncVerify)
-                .WithSummary("Check PAN-Aadhaar linkage synchronously (result returned directly).");
+        group.MapPost("/verify/sync", SyncVerify)
+            .WithSummary("Check PAN-Aadhaar linkage synchronously (result returned directly).");
 
-            group.MapPost("/verify", SubmitVerify)
-                .WithSummary("Submit async PAN-Aadhaar link check; returns a requestId.");
+        group.MapPost("/verify", SubmitVerify)
+            .WithSummary("Submit async PAN-Aadhaar link check; returns a requestId.");
 
-            group.MapGet("/verify/{requestId}", PollVerify)
-                .WithSummary("Poll an async PAN-Aadhaar link check by requestId. 202 while still processing.");
+        group.MapGet("/verify/{requestId}", PollVerify)
+            .WithSummary("Poll an async PAN-Aadhaar link check by requestId. 202 while still processing.");
 
-            return app;
-        }
+        return app;
     }
 
     private static Task<Results<Ok<IdfyTaskResponse<PanAadhaarLinkResult>>, ProblemHttpResult>> SyncVerify(

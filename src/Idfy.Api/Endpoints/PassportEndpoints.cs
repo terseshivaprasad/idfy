@@ -10,31 +10,28 @@ namespace Idfy.Api.Endpoints;
 
 public static class PassportEndpoints
 {
-    extension(IEndpointRouteBuilder app)
+    public static IEndpointRouteBuilder MapPassportEndpoints(this IEndpointRouteBuilder app)
     {
-        public IEndpointRouteBuilder MapPassportEndpoints()
-        {
-            var group = app.MapGroup("/api/passport").WithTags("Passport");
+        var group = app.MapGroup("/api/passport").WithTags("Passport");
 
-            group.MapPost("/extract", Extract)
-                .WithSummary("Extract passport details (OCR) from a URL or Base64 image. Optional second (back) page.");
+        group.MapPost("/extract", Extract)
+            .WithSummary("Extract passport details (OCR) from a URL or Base64 image. Optional second (back) page.");
 
-            group.MapPost("/extract/upload", ExtractUpload)
-                .WithSummary("Extract passport details (OCR) from uploaded image file(s). Optional second (back) page.")
-                .WithMetadata(new RequestSizeLimitAttribute(MaxUploadBytes))
-                .DisableAntiforgery();
+        group.MapPost("/extract/upload", ExtractUpload)
+            .WithSummary("Extract passport details (OCR) from uploaded image file(s). Optional second (back) page.")
+            .WithMetadata(new RequestSizeLimitAttribute(MaxUploadBytes))
+            .DisableAntiforgery();
 
-            group.MapPost("/verify/sync", SyncVerify)
-                .WithSummary("Verify a passport against the source synchronously (result returned directly).");
+        group.MapPost("/verify/sync", SyncVerify)
+            .WithSummary("Verify a passport against the source synchronously (result returned directly).");
 
-            group.MapPost("/verify", SubmitVerify)
-                .WithSummary("Submit async passport verification against the source; returns a requestId.");
+        group.MapPost("/verify", SubmitVerify)
+            .WithSummary("Submit async passport verification against the source; returns a requestId.");
 
-            group.MapGet("/verify/{requestId}", PollVerify)
-                .WithSummary("Poll an async passport verification by requestId. 202 while still processing.");
+        group.MapGet("/verify/{requestId}", PollVerify)
+            .WithSummary("Poll an async passport verification by requestId. 202 while still processing.");
 
-            return app;
-        }
+        return app;
     }
 
     private static Task<Results<Ok<IdfyTaskResponse<PassportSourceResult>>, ProblemHttpResult>> SyncVerify(

@@ -29,6 +29,9 @@ public interface IIdfyClient
     Task<IdfyTaskResponse<PassportResult>> ExtractPassportAsync(
         IdfyTaskRequest<IdfyPassportData> request, CancellationToken ct = default);
 
+    Task<IdfyTaskResponse<VoterIdResult>> ExtractVoterIdAsync(
+        IdfyTaskRequest<IdfyVoterIdData> request, CancellationToken ct = default);
+
     /// <summary>Verifies a driving licence against the source synchronously (result returned directly).</summary>
     Task<IdfyTaskResponse<DrivingLicenseSourceResult>> VerifyDrivingLicenseAsync(
         IdfyTaskRequest<IdfyDrivingLicenseVerifyData> request, CancellationToken ct = default);
@@ -100,7 +103,7 @@ public sealed class IdfyApiException(HttpStatusCode statusCode, string responseB
         _ => false,
     };
 
-    private static string? ReadString(string body, params ReadOnlySpan<string> names)
+    private static string? ReadString(string body, params string[] names)
     {
         try
         {
@@ -148,6 +151,11 @@ public sealed class IdfyClient(HttpClient http, ILogger<IdfyClient> logger) : II
     public Task<IdfyTaskResponse<PassportResult>> ExtractPassportAsync(
         IdfyTaskRequest<IdfyPassportData> request, CancellationToken ct = default) =>
         PostAsync<IdfyPassportData, PassportResult>("v3/tasks/sync/extract/ind_passport", request, ct);
+
+    public Task<IdfyTaskResponse<VoterIdResult>> ExtractVoterIdAsync(
+        IdfyTaskRequest<IdfyVoterIdData> request, CancellationToken ct = default) =>
+        // Returns the task object wrapped in a single-element array, like driving license.
+        PostAsync<IdfyVoterIdData, VoterIdResult>("v3/tasks/sync/extract/ind_voter_id", request, ct);
 
     public Task<IdfyTaskResponse<DrivingLicenseSourceResult>> VerifyDrivingLicenseAsync(
         IdfyTaskRequest<IdfyDrivingLicenseVerifyData> request, CancellationToken ct = default) =>
@@ -239,8 +247,9 @@ public sealed class IdfyClient(HttpClient http, ILogger<IdfyClient> logger) : II
         string path, IdfyTaskRequest<TData> request, CancellationToken ct)
     {
         // Buffer so the request carries Content-Length instead of chunked encoding.
+        // (In-memory serialization; the cancellable overload is .NET 9+.)
         using var content = JsonContent.Create(request);
-        await content.LoadIntoBufferAsync(ct);
+        await content.LoadIntoBufferAsync();
         using var response = await http.PostAsync(path, content, ct);
 
         var body = await response.Content.ReadAsStringAsync(ct);

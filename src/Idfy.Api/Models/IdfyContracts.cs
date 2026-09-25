@@ -46,6 +46,11 @@ public sealed record IdfyPassportData(
     [property: JsonPropertyName("document1")] string Document1,
     [property: JsonPropertyName("document2"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Document2);
 
+/// <summary>data for POST /v3/tasks/sync/extract/ind_voter_id. document2 (back side) is optional.</summary>
+public sealed record IdfyVoterIdData(
+    [property: JsonPropertyName("document1")] string Document1,
+    [property: JsonPropertyName("document2"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Document2);
+
 /// <summary>data for POST /v3/tasks/async/verify_with_source/ind_driving_license.</summary>
 public sealed record IdfyDrivingLicenseVerifyData(
     [property: JsonPropertyName("id_number")] string IdNumber,
@@ -268,6 +273,30 @@ public sealed record VoterIdSourceResult
 {
     [JsonPropertyName("match_output")] public VoterIdMatchOutput? MatchOutput { get; init; }
     [JsonPropertyName("source_output")] public VoterIdSourceOutput? SourceOutput { get; init; }
+}
+
+public sealed record VoterIdResult
+{
+    [JsonPropertyName("extraction_output")] public VoterIdOutput? ExtractionOutput { get; init; }
+}
+
+public sealed record VoterIdOutput
+{
+    [JsonPropertyName("address")] public string? Address { get; init; }
+    // A string here (e.g. "28"), unlike PAN's numeric age.
+    [JsonPropertyName("age")] public string? Age { get; init; }
+    [JsonPropertyName("date_of_birth")] public string? DateOfBirth { get; init; }
+    [JsonPropertyName("district")] public string? District { get; init; }
+    [JsonPropertyName("fathers_name")] public string? FathersName { get; init; }
+    [JsonPropertyName("gender")] public string? Gender { get; init; }
+    [JsonPropertyName("house_number")] public string? HouseNumber { get; init; }
+    [JsonPropertyName("id_number")] public string? IdNumber { get; init; }
+    [JsonPropertyName("is_scanned")] public bool? IsScanned { get; init; }
+    [JsonPropertyName("name_on_card")] public string? NameOnCard { get; init; }
+    [JsonPropertyName("pincode")] public string? Pincode { get; init; }
+    [JsonPropertyName("state")] public string? State { get; init; }
+    [JsonPropertyName("street_address")] public string? StreetAddress { get; init; }
+    [JsonPropertyName("year_of_birth")] public string? YearOfBirth { get; init; }
 }
 
 public sealed record VoterIdMatchOutput

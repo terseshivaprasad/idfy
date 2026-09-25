@@ -89,6 +89,18 @@ public class LogRedactionTests
     }
 
     [Fact]
+    public void RedactRequest_replaces_base64_second_document()
+    {
+        var body = """{"task_id":"t1","group_id":"g1","data":{"document1":"https://example.com/front.jpg","document2":"aGVsbG8gd29ybGQ="}}""";
+
+        var (_, _, redacted) = LogRedaction.RedactRequest(body);
+
+        Assert.Contains("https://example.com/front.jpg", redacted);
+        Assert.Contains("base64 redacted", redacted);
+        Assert.DoesNotContain("aGVsbG8", redacted);
+    }
+
+    [Fact]
     public void RedactRequest_masks_pii_in_verify_request()
     {
         var body = """{"task_id":"t1","group_id":"g1","data":{"id_number":"BR0120150052869","date_of_birth":"1985-02-15"}}""";

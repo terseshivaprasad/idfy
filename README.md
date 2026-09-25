@@ -1,6 +1,6 @@
 # Idfy.Api
 
-A .NET 10 minimal API that wraps the [IDfy EVE](https://eve.idfy.com) v3 tasks
+A .NET 8 minimal API that wraps the [IDfy EVE](https://eve.idfy.com) v3 tasks
 (document validation, OCR extraction, verify-with-source, masking and face
 compare). Every call to IDfy is logged to SQL Server with document images and
 extracted PII redacted.
@@ -30,6 +30,8 @@ is served in Development only.
 | POST | `/api/driving-license/extract/upload` | Extract driving-licence details from an uploaded file. |
 | POST | `/api/passport/extract` | Extract passport details (`document2` back page optional). |
 | POST | `/api/passport/extract/upload` | Extract passport details from uploaded file(s). |
+| POST | `/api/voter-id/extract` | Extract voter-ID details (`document2` back side optional). |
+| POST | `/api/voter-id/extract/upload` | Extract voter-ID details from uploaded file(s). |
 
 ### Aadhaar masking
 
@@ -93,7 +95,9 @@ processing, `200` once complete).
   (format-validated).
 
 See [`src/Idfy.Api/Idfy.Api.http`](src/Idfy.Api/Idfy.Api.http) for runnable
-examples of every endpoint.
+examples of every endpoint, and [`docs/INTEGRATION.md`](docs/INTEGRATION.md)
+for the full integration guide (request/response fields, async polling, error
+handling, retry guidance).
 
 ## CORS
 
@@ -180,6 +184,9 @@ the repo):
 For local development, `dotnet user-secrets` is the convenient equivalent.
 
 ## Running locally
+
+Requires the .NET 8 SDK (any later SDK also builds it). Deploy targets need the
+.NET 8 runtime; on IIS, the ASP.NET Core 8 Hosting Bundle.
 
 ```sh
 # 1. Start SQL Server (see docker-compose.yml) and create the schema

@@ -59,6 +59,15 @@ public sealed class FakeIdfyClient : IIdfyClient
         return Task.FromResult(Result(new IdfyTaskResponse<PassportResult> { Status = "completed", Type = "ind_passport" }));
     }
 
+    public IdfyVoterIdData? LastVoterIdData { get; private set; }
+
+    public Task<IdfyTaskResponse<VoterIdResult>> ExtractVoterIdAsync(
+        IdfyTaskRequest<IdfyVoterIdData> r, CancellationToken ct = default)
+    {
+        LastVoterIdData = r.Data;
+        return Task.FromResult(Result(new IdfyTaskResponse<VoterIdResult> { Status = "completed", Type = "ind_voter_id" }));
+    }
+
     public IdfyDrivingLicenseVerifyData? LastVerifyData { get; private set; }
     public bool VerifyResultReady { get; set; } = true;
 
@@ -266,6 +275,68 @@ public sealed class IntegrationTests : IClassFixture<IntegrationTests.Factory>
         var resp = await Client().PostAsync("/api/pan/extract",
             Json("""{"document":"https://x/a.jpg","document":"https://x/b.jpg"}"""));
         Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("""{"document":"https://x/a.jpg","Document":"https://x/b.jpg"}""")]                          // differs only in case
+    [InlineData("""{"document":"https://x/a.jpg","consent":true,"advancedFeatures":{"a":true,"a":false}}""")] // nested object
+    public async Task Rejects_duplicate_json_property_variants(string body)
+    {
+        var resp = await Client().PostAsync("/api/aadhaar/mask", Json(body));
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+        Assert.Contains("\"traceId\"", await resp.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Allows_same_property_name_in_different_objects()
+    {
+        var resp = await Client().PostAsync("/api/aadhaar/mask",
+            Json("""{"document":"https://x/a.jpg","consent":true,"advancedFeatures":{"consent":true}}"""));
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task Validates_upload_form_fields()
+    {
+        using var form = new MultipartFormDataContent
+        {
+            { new ByteArrayContent([1, 2, 3]) { Headers = { ContentType = new MediaTypeHeaderValue("image/png") } }, "file", "a.png" },
+            { new StringContent("ind_xyz"), "docType" },
+        };
+
+        var resp = await Client().PostAsync("/api/documents/validate/upload", form);
+
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+        var body = await resp.Content.ReadAsStringAsync();
+        Assert.Contains("\"DocType\"", body);
+        Assert.Contains("\"traceId\"", body);
+    }
+
+    [Fact]
+    public async Task Endpoint_problem_responses_carry_trace_id()
+    {
+        using var form = new MultipartFormDataContent
+        {
+            { new ByteArrayContent([1, 2, 3]) { Headers = { ContentType = new MediaTypeHeaderValue("text/plain") } }, "file", "a.txt" },
+        };
+
+        var resp = await Client().PostAsync("/api/pan/extract/upload", form);
+
+        Assert.Equal(HttpStatusCode.UnsupportedMediaType, resp.StatusCode);
+        Assert.Contains("\"traceId\"", await resp.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Validation_problem_lists_field_errors()
+    {
+        var resp = await Client().PostAsync("/api/pan-aadhaar-link/verify/sync",
+            Json("""{"panNumber":"ABC","aadhaarNumber":"12"}"""));
+
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
+        var body = await resp.Content.ReadAsStringAsync();
+        Assert.Contains("\"PanNumber\"", body);
+        Assert.Contains("\"AadhaarNumber\"", body);
+        Assert.Contains("\"traceId\"", body);
     }
 
     [Fact]
@@ -477,5 +548,32 @@ public sealed class IntegrationTests : IClassFixture<IntegrationTests.Factory>
             new { document = "https://x/front.jpg", document2 = "https://x/back.jpg" });
         Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
         Assert.Equal("https://x/back.jpg", _factory.Idfy.LastPassportData!.Document2);
+    }
+
+    [Fact]
+    public async Task Voter_id_extract_second_document_is_optional()
+    {
+        var resp = await Client().PostAsJsonAsync("/api/voter-id/extract", new { document = "https://x/front.jpg" });
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        Assert.Equal("https://x/front.jpg", _factory.Idfy.LastVoterIdData!.Document1);
+        Assert.Null(_factory.Idfy.LastVoterIdData.Document2);
+    }
+
+    [Fact]
+    public async Task Voter_id_extract_forwards_second_document_when_given()
+    {
+        var resp = await Client().PostAsJsonAsync("/api/voter-id/extract",
+            new { document = "https://x/front.jpg", document2 = "https://x/back.jpg" });
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        Assert.Equal("https://x/back.jpg", _factory.Idfy.LastVoterIdData!.Document2);
+    }
+
+    [Theory]
+    [InlineData("""{}""")]                                                        // missing document
+    [InlineData("""{"document":"https://x/a.jpg","document2":"not base64!!"}""")] // bad document2
+    public async Task Voter_id_extract_validates_input(string body)
+    {
+        var resp = await Client().PostAsync("/api/voter-id/extract", Json(body));
+        Assert.Equal(HttpStatusCode.BadRequest, resp.StatusCode);
     }
 }
